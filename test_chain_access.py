@@ -54,13 +54,21 @@ print("\n" + "=" * 60)
 print("תוצאות - כמה קבצים ירדו בפועל לכל רשת:")
 print("=" * 60)
 
+# במקום לנחש את שם התיקייה, סורקים את כל מה שבאמת נוצר בפועל
+# (בין אם זה test_dumps או dumps, ובין אם השם הוא SHUFERSAL או Shufersal)
+search_roots = [STORAGE_PATH, "./dumps"]
 for name_he, factory_name in OUR_CHAINS.items():
-    chain_folder = os.path.join(STORAGE_PATH, factory_name)
-    if os.path.isdir(chain_folder):
-        files = [f for f in os.listdir(chain_folder) if os.path.isfile(os.path.join(chain_folder, f))]
-        status = "✅ הצליח" if len(files) > 0 else "❌ נכשל (התיקייה ריקה)"
-        print(f"{name_he} ({factory_name}): {status} - {len(files)} קבצים")
-    else:
-        print(f"{name_he} ({factory_name}): ❌ נכשל (לא נוצרה תיקייה בכלל)")
+    found_files = []
+    for root_dir in search_roots:
+        if not os.path.isdir(root_dir):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            folder_name = os.path.basename(dirpath).lower().replace("_", "")
+            if factory_name.lower().replace("_", "") in folder_name or folder_name in factory_name.lower().replace("_", ""):
+                found_files.extend(os.path.join(dirpath, f) for f in filenames)
+    status = "✅ הצליח" if found_files else "❌ נכשל"
+    print(f"{name_he} ({factory_name}): {status} - {len(found_files)} קבצים")
+    for f in found_files:
+        print(f"    - {f}")
 
 print("\nהעתק/י את כל הפלט הזה ושלח/י אליי - משם נדע בדיוק איך להמשיך.")
