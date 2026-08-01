@@ -1,0 +1,34 @@
+name: Test Chain Access
+
+# מאפשר להריץ את זה ידנית מכפתור ב-GitHub (workflow_dispatch),
+# וגם אוטומטית בכל push לענף main - כדי שנוכל לבדוק בקלות.
+"on":
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-access:
+    runs-on: ubuntu-latest   # <-- זה השרת לינוקס שרץ בארה"ב/אירופה - בדיוק מה שרצינו לבדוק
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run chain access test
+        run: python test_chain_access.py
+
+      - name: Upload downloaded test files (for inspection)
+        if: always()   # מעלה את הקבצים גם אם הבדיקה נכשלה חלקית, כדי שנוכל לבדוק מה כן ירד
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-dumps
+          path: test_dumps/
+          if-no-files-found: warn
