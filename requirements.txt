@@ -1,1 +1,2 @@
 il-supermarket-scraper
+il-supermarket-parser
