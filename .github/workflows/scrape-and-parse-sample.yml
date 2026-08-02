@@ -1,0 +1,36 @@
+name: Scrape And Parse Sample
+
+"on":
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'scrape_and_parse_sample.py'
+      - 'requirements.txt'
+      - '.github/workflows/scrape-and-parse-sample.yml'
+
+jobs:
+  scrape-and-parse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scrape and parse sample
+        run: python scrape_and_parse_sample.py
+
+      - name: Upload parsed CSV files (for inspection)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsed-csv-sample
+          path: parsed_csv/
+          if-no-files-found: warn
