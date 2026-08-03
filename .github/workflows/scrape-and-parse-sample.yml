@@ -1,36 +1,74 @@
-name: Scrape And Parse Sample
+"""
+שלב 2: הורדת דגימה קטנה + המרה ל-CSV.
 
-"on":
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - 'scrape_and_parse_sample.py'
-      - 'requirements.txt'
-      - '.github/workflows/scrape-and-parse-sample.yml'
+מטרת הסקריפט: להוריד כמה קבצים אמיתיים מ-4 הרשתות שאישרנו שעובדות
+(שופרסל, רמי לוי, יוחננוף, טיב טעם), ולהמיר אותם לקבצי CSV מסודרים -
+כדי שנוכל *לראות בפועל* את העמודות והמבנה, לפני שבונים את כל שאר הצינור.
 
-jobs:
-  scrape-and-parse:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+מריצים את זה בדיוק כמו את test_chain_access.py - ב-GitHub Actions,
+לא במחשב האישי (חוץ אם תרצה, זה גם יעבוד מקומית עם pip install זהה).
+"""
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+from il_supermarket_scarper import ScarpingTask, ScraperFactory
+from il_supermarket_parsers import ConvertingTask
+import os
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+# 4 הרשתות שאישרנו שעובדות
+WORKING_CHAINS = [
+    ScraperFactory.SHUFERSAL.name,
+    ScraperFactory.RAMI_LEVY.name,
+    ScraperFactory.YOHANANOF.name,
+    ScraperFactory.TIV_TAAM.name,
+]
 
-      - name: Run scrape and parse sample
-        run: python scrape_and_parse_sample.py
+RAW_DUMPS_PATH = "./dumps"
+PARSED_CSV_PATH = "./parsed_csv"
 
-      - name: Upload parsed CSV files (for inspection)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: parsed-csv-sample
-          path: parsed_csv/
-          if-no-files-found: warn
+print("=" * 60)
+print("שלב א: מוריד דגימה (2 קבצים לכל רשת) מ-4 הרשתות")
+print("=" * 60)
+
+scraper = ScarpingTask(
+    enabled_scrapers=WORKING_CHAINS,
+    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
+    multiprocessing=1,
+    output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
+)
+scraper.start(limit=2)
+print("ממתין לסיום ההורדה...")
+scraper.join()
+print("ההורדה הסתיימה.\n")
+
+print("=" * 60)
+print("שלב ב: ממיר את הקבצים הגולמיים ל-CSV מסודר")
+print("=" * 60)
+
+converter = ConvertingTask(
+    enabled_parsers=WORKING_CHAINS,
+    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
+    source_configuration={"folder": RAW_DUMPS_PATH},
+    output_configuration=[{"output_mode": "csv", "output_folder": PARSED_CSV_PATH}],
+    status_configuration={"database_type": "json", "base_path": "./parse_status_logs"},
+    multiprocessing=1,
+)
+converter.start()
+print("ממתין לסיום ההמרה...")
+converter.join()
+print("ההמרה הסתיימה.\n")
+
+print("=" * 60)
+print("תוצאות - קבצי ה-CSV שנוצרו, ותצוגה מקדימה של השורות הראשונות")
+print("=" * 60)
+
+for dirpath, dirnames, filenames in os.walk(PARSED_CSV_PATH):
+    for fname in filenames:
+        full_path = os.path.join(dirpath, fname)
+        print(f"\n--- {full_path} ---")
+        with open(full_path, encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                if i >= 4:  # רק כותרת + 3 שורות ראשונות, כדי לא להציף
+                    print("    ... (עוד שורות)")
+                    break
+                print("   ", line.strip())
+
+print("\nהעתק/י את כל הפלט הזה ושלח/י אליי.")
