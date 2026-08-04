@@ -30,7 +30,7 @@ print("=" * 60)
 
 scraper = ScarpingTask(
     enabled_scrapers=WORKING_CHAINS,
-    files_types=["STORE_FILE", "PRICE_FILE"],
+    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
     multiprocessing=1,
     output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
 )
@@ -45,7 +45,7 @@ print("=" * 60)
 
 converter = ConvertingTask(
     enabled_parsers=WORKING_CHAINS,
-    files_types=["STORE_FILE", "PRICE_FILE"],
+    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
     source_configuration={"folder": RAW_DUMPS_PATH},
     output_configuration=[{"output_mode": "csv", "output_folder": PARSED_CSV_PATH}],
     status_configuration={"database_type": "json", "base_path": "./parse_status_logs"},
