@@ -164,10 +164,10 @@ print("עיבוד קובצי מחירים - כל 4 הרשתות")
 print("=" * 60)
 
 PRICE_FILES = {
-    "shufersal": "price_file_shufersal.csv",
-    "rami_levy": "price_file_rami_levy.csv",
-    "yohananof": "price_file_yohananof.csv",
-    "tiv_taam": "price_file_tiv_taam.csv",
+    "shufersal": "price_full_file_shufersal.csv",
+    "rami_levy": "price_full_file_rami_levy.csv",
+    "yohananof": "price_full_file_yohananof.csv",
+    "tiv_taam": "price_full_file_tiv_taam.csv",
 }
 
 all_products = []
