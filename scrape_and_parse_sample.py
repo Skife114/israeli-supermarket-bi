@@ -25,18 +25,32 @@ RAW_DUMPS_PATH = "./dumps"
 PARSED_CSV_PATH = "./parsed_csv"
 
 print("=" * 60)
-print("שלב א: מוריד דגימה (2 קבצים לכל רשת) מ-4 הרשתות")
+print("שלב א: מוריד דגימה (קובץ סניפים + קובץ מחירים מלא) מ-4 הרשתות")
 print("=" * 60)
 
-scraper = ScarpingTask(
+# חשוב: מפרידים בין סוגי הקבצים לשתי הורדות נפרדות, כל אחת עם limit משלה.
+# בהורדה אחת עם limit משותף (כמו שעשינו קודם), ה-limit "נגמר" על קבצי הסניפים
+# לפני שמגיעים בכלל לקובץ המחירים - ואז חלק מהרשתות לא מקבלות מחירים בכלל.
+store_scraper = ScarpingTask(
     enabled_scrapers=WORKING_CHAINS,
-    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
+    files_types=["STORE_FILE"],
     multiprocessing=1,
     output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
 )
-scraper.start(limit=2)
-print("ממתין לסיום ההורדה...")
-scraper.join()
+store_scraper.start(limit=1)
+print("ממתין לסיום הורדת קובצי הסניפים...")
+store_scraper.join()
+print("קובצי הסניפים ירדו בהצלחה.\n")
+
+price_scraper = ScarpingTask(
+    enabled_scrapers=WORKING_CHAINS,
+    files_types=["PRICE_FULL_FILE"],
+    multiprocessing=1,
+    output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
+)
+price_scraper.start(limit=1)
+print("ממתין לסיום הורדת קובצי המחירים המלאים...")
+price_scraper.join()
 print("ההורדה הסתיימה.\n")
 
 print("=" * 60)
