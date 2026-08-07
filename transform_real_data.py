@@ -229,23 +229,38 @@ def geocode_store(address, city_name):
     ממיר כתובת + שם עיר לקואורדינטות (lat, lng) דרך Nominatim (OpenStreetMap) - שירות חינמי.
     חשוב: מדיניות השימוש ההוגן של Nominatim מגבילה לבקשה אחת בשנייה בלבד -
     לכן יש המתנה (sleep) של יותר משנייה בין כל בקשה לבקשה.
+
+    אם הכתובת המדויקת (רחוב+מספר+עיר) לא נמצאת, מנסים fallback לרמת העיר בלבד -
+    פחות מדויק (ממקם את הסניף במרכז העיר, לא בכתובת המדויקת), אבל עדיף על כלום.
     """
     if not city_name:
+        return None, None, "no_city"
+
+    def try_query(q):
+        try:
+            resp = requests.get(
+                NOMINATIM_URL,
+                params={"q": q, "format": "json", "limit": 1, "countrycodes": "il"},
+                headers=HEADERS, timeout=15,
+            )
+            resp.raise_for_status()
+            results = resp.json()
+            if results:
+                return float(results[0]["lat"]), float(results[0]["lon"])
+        except Exception:
+            pass
         return None, None
-    query = f"{address}, {city_name}, ישראל"
-    try:
-        resp = requests.get(
-            NOMINATIM_URL,
-            params={"q": query, "format": "json", "limit": 1, "countrycodes": "il"},
-            headers=HEADERS, timeout=15,
-        )
-        resp.raise_for_status()
-        results = resp.json()
-        if results:
-            return float(results[0]["lat"]), float(results[0]["lon"])
-    except Exception:
-        pass
-    return None, None
+
+    lat, lng = try_query(f"{address}, {city_name}, ישראל")
+    if lat is not None:
+        return lat, lng, "exact"
+
+    time.sleep(1.1)  # עוד בקשה = עוד המתנה, לפי אותה מדיניות שימוש הוגן
+    lat, lng = try_query(f"{city_name}, ישראל")
+    if lat is not None:
+        return lat, lng, "city_fallback"
+
+    return None, None, "failed"
 
 
 print("\n" + "=" * 60)
@@ -253,18 +268,24 @@ print(f"גיאוקודינג - ממיר כתובת לקואורדינטות עב
 print("(זה איטי בכוונה - שירות חינמי עם מגבלת בקשה אחת בשנייה, אמור לקחת כ-10 דקות)")
 print("=" * 60)
 
-geocoded_ok = 0
+geocoded_exact = 0
+geocoded_city = 0
 for i, s in enumerate(all_stores):
-    lat, lng = geocode_store(s["address"], s["city_name"])
+    lat, lng, precision = geocode_store(s["address"], s["city_name"])
     s["lat"] = lat
     s["lng"] = lng
-    if lat is not None:
-        geocoded_ok += 1
+    s["location_precision"] = precision
+    if precision == "exact":
+        geocoded_exact += 1
+    elif precision == "city_fallback":
+        geocoded_city += 1
     if (i + 1) % 50 == 0:
-        print(f"  התקדמות: {i+1}/{len(all_stores)} ({geocoded_ok} הצליחו עד כה)")
+        print(f"  התקדמות: {i+1}/{len(all_stores)} (מדויק: {geocoded_exact}, ברמת עיר: {geocoded_city})")
     time.sleep(1.1)  # מדיניות השימוש ההוגן של Nominatim - בקשה אחת בשנייה, לא יותר
 
-print(f"\nגיאוקודינג הסתיים: הצליח עבור {geocoded_ok} מתוך {len(all_stores)} סניפים")
+geocoded_ok = geocoded_exact + geocoded_city
+print(f"\nגיאוקודינג הסתיים: {geocoded_ok} מתוך {len(all_stores)} סניפים קיבלו קואורדינטות")
+print(f"  מתוכם: {geocoded_exact} בדיוק כתובת מלאה, {geocoded_city} ברמת עיר בלבד (fallback)")
 
 with open("stores_transformed.json", "w", encoding="utf-8") as f:
     json.dump(all_stores, f, ensure_ascii=False, indent=2)
