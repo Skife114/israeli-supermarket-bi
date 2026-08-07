@@ -212,3 +212,63 @@ if all_products:
     prices_combined.to_json("prices_transformed.json", orient="records", force_ascii=False, indent=2)
 else:
     print("\n⚠️  לא נמצא אף קובץ מחירים לעיבוד")
+
+
+# ============================================================
+# חלק ג: גיאוקודינג - המרת כתובת לקואורדינטות (lat/lng)
+# ============================================================
+import time
+
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+# חובה לפי מדיניות השימוש של Nominatim: User-Agent שמזהה את האפליקציה
+HEADERS = {"User-Agent": "israeli-supermarket-bi-portfolio-project/1.0"}
+
+
+def geocode_store(address, city_name):
+    """
+    ממיר כתובת + שם עיר לקואורדינטות (lat, lng) דרך Nominatim (OpenStreetMap) - שירות חינמי.
+    חשוב: מדיניות השימוש ההוגן של Nominatim מגבילה לבקשה אחת בשנייה בלבד -
+    לכן יש המתנה (sleep) של יותר משנייה בין כל בקשה לבקשה.
+    """
+    if not city_name:
+        return None, None
+    query = f"{address}, {city_name}, ישראל"
+    try:
+        resp = requests.get(
+            NOMINATIM_URL,
+            params={"q": query, "format": "json", "limit": 1, "countrycodes": "il"},
+            headers=HEADERS, timeout=15,
+        )
+        resp.raise_for_status()
+        results = resp.json()
+        if results:
+            return float(results[0]["lat"]), float(results[0]["lon"])
+    except Exception:
+        pass
+    return None, None
+
+
+print("\n" + "=" * 60)
+print(f"גיאוקודינג - ממיר כתובת לקואורדינטות עבור {len(all_stores)} סניפים")
+print("(זה איטי בכוונה - שירות חינמי עם מגבלת בקשה אחת בשנייה, אמור לקחת כ-10 דקות)")
+print("=" * 60)
+
+geocoded_ok = 0
+for i, s in enumerate(all_stores):
+    lat, lng = geocode_store(s["address"], s["city_name"])
+    s["lat"] = lat
+    s["lng"] = lng
+    if lat is not None:
+        geocoded_ok += 1
+    if (i + 1) % 50 == 0:
+        print(f"  התקדמות: {i+1}/{len(all_stores)} ({geocoded_ok} הצליחו עד כה)")
+    time.sleep(1.1)  # מדיניות השימוש ההוגן של Nominatim - בקשה אחת בשנייה, לא יותר
+
+print(f"\nגיאוקודינג הסתיים: הצליח עבור {geocoded_ok} מתוך {len(all_stores)} סניפים")
+
+with open("stores_transformed.json", "w", encoding="utf-8") as f:
+    json.dump(all_stores, f, ensure_ascii=False, indent=2)
+
+print("\nדוגמה לשלוש רשומות סניף עם קואורדינטות:")
+for s in all_stores[:3]:
+    print(" ", s)
