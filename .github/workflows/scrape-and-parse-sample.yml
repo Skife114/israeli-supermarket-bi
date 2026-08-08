@@ -9,6 +9,10 @@ name: Scrape And Parse Sample
       - 'transform_real_data.py'
       - 'requirements.txt'
       - '.github/workflows/scrape-and-parse-sample.yml'
+  schedule:
+    # רץ כל יום ב-03:00 UTC (06:00 בישראל בקיץ / 05:00 בחורף) -
+    # שעה שקטה, אחרי שרוב הרשתות כבר עדכנו את קבצי המחירים היומיים שלהן
+    - cron: '0 3 * * *'
 
 jobs:
   scrape-and-parse:
