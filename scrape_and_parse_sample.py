@@ -48,7 +48,9 @@ price_scraper = ScarpingTask(
     multiprocessing=1,
     output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
 )
-price_scraper.start(limit=1)
+# limit=6 -> דגימה של עד 6 סניפים לכל רשת (איזון בין כיסוי לזמן ריצה),
+# במקום סניף אחד בלבד. כך ההשוואה בין רשתות מבוססת על כמה סניפים ולא רק אחד.
+price_scraper.start(limit=6)
 print("ממתין לסיום הורדת קובצי המחירים המלאים...")
 price_scraper.join()
 print("ההורדה הסתיימה.\n")
