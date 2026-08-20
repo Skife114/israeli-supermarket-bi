@@ -210,6 +210,30 @@ if all_products:
 
     products_combined.to_json("products_transformed.json", orient="records", force_ascii=False, indent=2)
     prices_combined.to_json("prices_transformed.json", orient="records", force_ascii=False, indent=2)
+
+    # --- קובץ סיכום מצומצם: ממוצע מחיר לכל רשת+ברקוד (במקום כל רשומת מחיר גולמית) ---
+    # הדשבורד לא צריך את כל 280K+ הרשומות הגולמיות כדי להציג טבלת השוואה -
+    # מספיק לו ממוצע לכל רשת+מוצר. זה מקטין את הקובץ שהדפדפן צריך לטעון ביותר מפי 5.
+    prices_numeric = prices_combined.copy()
+    prices_numeric["price"] = pd.to_numeric(prices_numeric["price"], errors="coerce")
+    n_before = len(prices_numeric)
+    prices_numeric = prices_numeric.dropna(subset=["price"])
+    n_dropped = n_before - len(prices_numeric)
+    if n_dropped:
+        print(f"  (הוסרו {n_dropped} רשומות עם מחיר חסר/לא-תקין מתוך {n_before} - "
+              f"{n_dropped/n_before*100:.0f}%, תואם למה שראינו בקבצי המקור)")
+
+    current_avg = (
+        prices_numeric.groupby(["chain_id", "barcode"])["price"]
+        .agg(avg_price="mean", n_stores="count")
+        .reset_index()
+    )
+    current_avg["avg_price"] = current_avg["avg_price"].round(2)
+
+    print(f"\nקובץ סיכום מצומצם (current_avg): {len(current_avg)} רשומות "
+          f"(במקום {len(prices_combined)} הגולמיות - צמצום של פי {len(prices_combined)/len(current_avg):.1f})")
+
+    current_avg.to_json("current_avg_transformed.json", orient="records", force_ascii=False)
 else:
     print("\n⚠️  לא נמצא אף קובץ מחירים לעיבוד")
 
