@@ -145,9 +145,9 @@ import requests
 # הפסיק לעבוד (404) אחרי כמה שבועות - פורטלי ממשלה מחליפים את המזהים האלה
 # מדי פעם. לכן במקום מזהה קבוע אחד, מנסים רשימת מועמדים ברצף עד שאחד עובד.
 CBS_RESOURCE_ID_CANDIDATES = [
+    "8f714b6f-c35c-4b40-a0e7-547b675eee0e",  # אושר עובד בפועל - שדות: city_code, city_name_he
     "5938933b-35ce-4a73-9026-59ea377ee1b0",
     "d4901968-dad3-4845-a9b0-a57d027f11ab",
-    "8f714b6f-c35c-4b40-a0e7-547b675eee0e",
     "b7cf8f14-64a2-4b33-8d4b-edb286fdbd37",  # הישן - נשאר כניסיון אחרון ליתר ביטחון
 ]
 
@@ -172,8 +172,8 @@ def load_city_code_lookup():
                 print(f"  לדוגמה, שדות הרשומה הראשונה: {list(records[0].keys())}")
             lookup = {}
             for r in records:
-                code = str(r.get("סמל_ישוב") or r.get("SEMEL_YISHUV") or r.get("סמל יישוב") or "").strip()
-                name = str(r.get("שם_ישוב") or r.get("SHEM_YISHUV") or r.get("שם יישוב") or "").strip()
+                code = str(r.get("סמל_ישוב") or r.get("SEMEL_YISHUV") or r.get("סמל יישוב") or r.get("city_code") or "").strip()
+                name = str(r.get("שם_ישוב") or r.get("SHEM_YISHUV") or r.get("שם יישוב") or r.get("city_name_he") or "").strip()
                 if code:
                     lookup[code] = name
             if lookup:
