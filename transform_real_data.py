@@ -141,36 +141,48 @@ with open("chains_transformed.json", "w", encoding="utf-8") as f:
 
 import requests
 
-CBS_RESOURCE_ID = "b7cf8f14-64a2-4b33-8d4b-edb286fdbd37"  # קובץ יישובים - data.gov.il
+# קובץ יישובים - data.gov.il. ה-resource_id הראשון שהשתמשנו בו (b7cf8f14...)
+# הפסיק לעבוד (404) אחרי כמה שבועות - פורטלי ממשלה מחליפים את המזהים האלה
+# מדי פעם. לכן במקום מזהה קבוע אחד, מנסים רשימת מועמדים ברצף עד שאחד עובד.
+CBS_RESOURCE_ID_CANDIDATES = [
+    "5938933b-35ce-4a73-9026-59ea377ee1b0",
+    "d4901968-dad3-4845-a9b0-a57d027f11ab",
+    "8f714b6f-c35c-4b40-a0e7-547b675eee0e",
+    "b7cf8f14-64a2-4b33-8d4b-edb286fdbd37",  # הישן - נשאר כניסיון אחרון ליתר ביטחון
+]
 
 def load_city_code_lookup():
     """
     מוריד את טבלת קודי היישובים הרשמית (משרד הפנים/למ"ס) דרך data.gov.il,
-    וממפה קוד יישוב -> שם יישוב. אם ה-API לא זמין/ה-resource_id השתנה,
-    מחזיר מיפוי ריק (לא מפיל את כל הסקריפט - פשוט נשארים עם הקוד הגולמי).
+    וממפה קוד יישוב -> שם יישוב. מנסה כמה resource_id מועמדים ברצף (כי הם
+    מתחלפים מדי פעם) - הראשון שמצליח נבחר. אם אף אחד לא עובד, מחזיר מיפוי
+    ריק (לא מפיל את כל הסקריפט - פשוט נשארים עם הקוד הגולמי).
     """
-    try:
-        resp = requests.get(
-            "https://data.gov.il/api/3/action/datastore_search",
-            params={"resource_id": CBS_RESOURCE_ID, "limit": 3000},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        records = resp.json()["result"]["records"]
-        print(f"  הורדו {len(records)} רשומות יישובים מ-data.gov.il")
-        # שמות השדות בפועל ב-API עשויים להשתנות - מדפיסים את הראשון לבדיקה
-        if records:
-            print(f"  לדוגמה, שדות הרשומה הראשונה: {list(records[0].keys())}")
-        lookup = {}
-        for r in records:
-            code = str(r.get("סמל_ישוב") or r.get("SEMEL_YISHUV") or r.get("סמל יישוב") or "").strip()
-            name = str(r.get("שם_ישוב") or r.get("SHEM_YISHUV") or r.get("שם יישוב") or "").strip()
-            if code:
-                lookup[code] = name
-        return lookup
-    except Exception as e:
-        print(f"  ⚠️  לא הצלחתי להוריד את קובץ היישובים ({e}) - ממשיכים עם קוד גולמי בלבד")
-        return {}
+    for resource_id in CBS_RESOURCE_ID_CANDIDATES:
+        try:
+            resp = requests.get(
+                "https://data.gov.il/api/3/action/datastore_search",
+                params={"resource_id": resource_id, "limit": 3000},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            records = resp.json()["result"]["records"]
+            print(f"  הורדו {len(records)} רשומות יישובים מ-data.gov.il (resource_id: {resource_id})")
+            if records:
+                print(f"  לדוגמה, שדות הרשומה הראשונה: {list(records[0].keys())}")
+            lookup = {}
+            for r in records:
+                code = str(r.get("סמל_ישוב") or r.get("SEMEL_YISHUV") or r.get("סמל יישוב") or "").strip()
+                name = str(r.get("שם_ישוב") or r.get("SHEM_YISHUV") or r.get("שם יישוב") or "").strip()
+                if code:
+                    lookup[code] = name
+            if lookup:
+                return lookup
+            print(f"  ⚠️  resource_id {resource_id} החזיר תשובה ריקה - מנסה את הבא")
+        except Exception as e:
+            print(f"  ⚠️  resource_id {resource_id} נכשל ({e}) - מנסה את הבא")
+    print("  ⚠️  כל ה-resource_id המועמדים נכשלו - ממשיכים עם קוד גולמי בלבד")
+    return {}
 
 
 print("\n" + "=" * 60)
