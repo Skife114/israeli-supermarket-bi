@@ -1,4 +1,4 @@
-il-supermarket-scraper
-il-supermarket-parser
-pandas
-requests
+il-supermarket-scraper==1.0.13
+il-supermarket-parser==1.0.10
+pandas==3.0.6
+requests==2.34.2
