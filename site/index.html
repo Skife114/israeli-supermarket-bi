@@ -382,7 +382,7 @@ async function loadDashboardData(){
     manufacturerSelect.innerHTML = '';
     mans.forEach(m => {
       const opt = document.createElement('option');
-      opt.value = m; opt.textContent = m === 'all' ? 'כל היצרנים' : m;
+      opt.value = m; opt.textContent = m === 'all' ? 'כל היצרנים' : (m ? m : 'יצרן לא ידוע');
       manufacturerSelect.appendChild(opt);
     });
     if(!mans.includes(state.manufacturer)) state.manufacturer = 'all';
@@ -424,7 +424,7 @@ async function loadDashboardData(){
     return products.filter(p => {
       if(state.category !== 'all' && p.category !== state.category) return false;
       if(state.manufacturer !== 'all' && p.manufacturer !== state.manufacturer) return false;
-      if(state.search && !p.name.includes(state.search) && !p.manufacturer.includes(state.search)) return false;
+      if(state.search && !(p.name||'').includes(state.search) && !(p.manufacturer||'').includes(state.search)) return false;
       return true;
     });
   }
@@ -505,8 +505,8 @@ async function loadDashboardData(){
       }).join('');
       return `<tr>
         <td>
-          <div class="prod-name">${p.name}</div>
-          <div class="prod-meta">${p.category} · ${p.manufacturer}</div>
+          <div class="prod-name">${p.name || ('מוצר ' + p.barcode)}</div>
+          <div class="prod-meta">${p.category}${p.manufacturer ? ' · ' + p.manufacturer : ''}</div>
         </td>
         ${cells}
       </tr>`;
@@ -703,7 +703,7 @@ async function loadDashboardData(){
   function searchProducts(q){
     q = q.trim();
     if(!q) return [];
-    return products.filter(p => p.name.includes(q) || p.manufacturer.includes(q) || p.category.includes(q)).slice(0, 12);
+    return products.filter(p => (p.name||'').includes(q) || (p.manufacturer||'').includes(q) || (p.category||'').includes(q)).slice(0, 12);
   }
 
   function renderSuggestions(list){
@@ -712,7 +712,7 @@ async function loadDashboardData(){
       basketSuggestions.innerHTML = '<div class="suggestion-empty">לא נמצאו מוצרים תואמים</div>';
     } else {
       basketSuggestions.innerHTML = list.map(p =>
-        `<div class="suggestion-item" data-barcode="${p.barcode}"><span>${p.name}</span><span class="s-cat">${p.category}</span></div>`
+        `<div class="suggestion-item" data-barcode="${p.barcode}"><span>${p.name || ('מוצר ' + p.barcode)}</span><span class="s-cat">${p.category}</span></div>`
       ).join('');
     }
     basketSuggestions.classList.remove('hidden');
@@ -786,7 +786,8 @@ async function loadDashboardData(){
     } else {
       listEl.innerHTML = basket.map(b => {
         const p = productByBarcode[b.barcode];
-        return `<div class="basket-item-chip">${p.name} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${p.name} מהסל">✕</button></div>`;
+        const pName = p.name || ('מוצר ' + b.barcode);
+        return `<div class="basket-item-chip">${pName} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${pName} מהסל">✕</button></div>`;
       }).join('');
     }
 
@@ -815,7 +816,7 @@ async function loadDashboardData(){
         const bg = colorForRatio(t);
         return `<td><span class="price-cell" style="background:${bg}22;color:${bg};">₪${v.toFixed(2)}</span></td>`;
       }).join('');
-      return `<tr><td><div class="prod-name">${p.name}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
+      return `<tr><td><div class="prod-name">${p.name || ('מוצר ' + b.barcode)}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
     }).join('');
 
     // שורת סה"כ

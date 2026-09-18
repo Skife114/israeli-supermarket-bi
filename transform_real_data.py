@@ -292,6 +292,13 @@ if all_products:
     products_combined = pd.concat(all_products, ignore_index=True).drop_duplicates(subset="barcode", keep="first")
     prices_combined = pd.concat(all_prices, ignore_index=True)
 
+    # תא ריק ב-itemname/manufacturename הופך ל-NaN של pandas (na_values=[""]).
+    # pandas' to_json כותב את זה כ-null תקין (לא NaN לא-תקין כמו json.dump הגולמי),
+    # אבל null עדיין שובר קוד צד-לקוח שמניח מחרוזת (כמו .includes() בדשבורד) -
+    # אז מנקים כאן, לפני כל כתיבה לקובץ, בדיוק כמו clean_str לשדות הסניפים.
+    products_combined["name"] = products_combined["name"].fillna("")
+    products_combined["manufacturer"] = products_combined["manufacturer"].fillna("")
+
     products_combined["category"] = products_combined["name"].apply(categorize_product)
     n_categorized = (products_combined["category"] != "אחר").sum()
     if len(products_combined) > 0:
