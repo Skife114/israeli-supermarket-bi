@@ -65,6 +65,14 @@ def is_bad_address(addr, city):
     return False
 
 
+def clean_str(val):
+    """ממיר תא ריק/NaN של pandas למחרוזת ריקה - כדי שלא ידלוף כ-NaN
+    לא-תקין (לא JSON תקני, ישבור JSON.parse בצד הדשבורד) לקבצי הפלט."""
+    if pd.isna(val):
+        return ""
+    return str(val)
+
+
 def load_and_ffill(path, ffill_cols):
     df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[""])
     df[ffill_cols] = df[ffill_cols].ffill()
@@ -77,6 +85,11 @@ def load_and_ffill(path, ffill_cols):
 def process_store_file(path):
     df = load_and_ffill(path, ["found_folder", "file_name", "chainid", "chainname",
                                 "lastupdatedate", "lastupdatetime", "subchainid", "subchainname"])
+
+    if df.empty:
+        # קובץ קיים אבל ריק (0 שורות) - לא נופלים על idxmax של סדרה ריקה.
+        # מדלגים על הרשת הזו לריצה הזו במקום להפיל את כל הסקריפט בגללה.
+        return None, [], None
 
     # לוקחים רק את הקובץ העדכני ביותר (הכי הרבה lastupdatedate+lastupdatetime)
     df["_ts"] = df["lastupdatedate"].fillna("") + df["lastupdatetime"].fillna("")
@@ -102,10 +115,10 @@ def process_store_file(path):
             "store_id": f'{chain_info["id"]}_{row["storeid"]}',
             "chain_id": chain_info["id"],
             "chain_name_he": chain_info["name_he"],
-            "store_name": name,
+            "store_name": clean_str(name),
             "address": row.get("address", ""),
-            "city_code": row.get("city", ""),
-            "zipcode": row.get("zipcode", ""),
+            "city_code": clean_str(row.get("city")),
+            "zipcode": clean_str(row.get("zipcode")),
             # lat/lng ייתווספו בשלב הגיאוקודינג הנפרד
         })
 
@@ -124,7 +137,14 @@ all_chains = {}
 all_stores = []
 for fname in ["store_file_shufersal.csv", "store_file_rami_levy.csv",
               "store_file_yohananof.csv", "store_file_tiv_taam.csv"]:
-    chain_info, stores, stats = process_store_file(f"{INPUT_DIR}/{fname}")
+    try:
+        chain_info, stores, stats = process_store_file(f"{INPUT_DIR}/{fname}")
+    except FileNotFoundError:
+        print(f"\n{fname}: ⚠️  קובץ הסניפים לא נמצא - מדלגים על הרשת הזו לריצה הזו")
+        continue
+    if chain_info is None:
+        print(f"\n{fname}: ⚠️  קובץ הסניפים ריק (0 שורות) - מדלגים על הרשת הזו לריצה הזו")
+        continue
     all_chains[chain_info["id"]] = chain_info
     all_stores.extend(stores)
     print(f"\n{chain_info['name_he']} ({fname}):")
