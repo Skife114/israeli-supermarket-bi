@@ -291,8 +291,11 @@ if all_products:
 
     products_combined["category"] = products_combined["name"].apply(categorize_product)
     n_categorized = (products_combined["category"] != "אחר").sum()
-    print(f"\nסיווג קטגוריות: {n_categorized} מתוך {len(products_combined)} מוצרים סווגו "
-          f"({n_categorized/len(products_combined)*100:.0f}%) - השאר תחת 'אחר'")
+    if len(products_combined) > 0:
+        print(f"\nסיווג קטגוריות: {n_categorized} מתוך {len(products_combined)} מוצרים סווגו "
+              f"({n_categorized/len(products_combined)*100:.0f}%) - השאר תחת 'אחר'")
+    else:
+        print("\n⚠️  אין מוצרים לסיווג (קבצי המחירים שנמצאו היו ריקים)")
 
     print(f"\nסה\"כ מוצרים ייחודיים בכל הרשתות: {len(products_combined)}")
     print(f"סה\"כ רשומות מחיר בכל הרשתות: {len(prices_combined)}")
@@ -323,8 +326,11 @@ if all_products:
     )
     current_avg["avg_price"] = current_avg["avg_price"].round(2)
 
-    print(f"\nקובץ סיכום מצומצם (current_avg): {len(current_avg)} רשומות "
-          f"(במקום {len(prices_combined)} הגולמיות - צמצום של פי {len(prices_combined)/len(current_avg):.1f})")
+    if len(current_avg) > 0:
+        print(f"\nקובץ סיכום מצומצם (current_avg): {len(current_avg)} רשומות "
+              f"(במקום {len(prices_combined)} הגולמיות - צמצום של פי {len(prices_combined)/len(current_avg):.1f})")
+    else:
+        print(f"\nקובץ סיכום מצומצם (current_avg): 0 רשומות (אין מחירים תקינים לסיכום)")
 
     current_avg.to_json("current_avg_transformed.json", orient="records", force_ascii=False)
 else:
