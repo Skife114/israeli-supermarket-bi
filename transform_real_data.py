@@ -144,19 +144,30 @@ import requests
 # קובץ יישובים - data.gov.il. ה-resource_id הראשון שהשתמשנו בו (b7cf8f14...)
 # הפסיק לעבוד (404) אחרי כמה שבועות - פורטלי ממשלה מחליפים את המזהים האלה
 # מדי פעם. לכן במקום מזהה קבוע אחד, מנסים רשימת מועמדים ברצף עד שאחד עובד.
+# הבדיקה שנעשתה (2026-09-18): 8f714b6f ו-d4901968 ו-b7cf8f14 עבדו, 5938933b
+# החזיר 404 - סדר הרשימה עודכן כך שהמועמד שאומת כעובד ונמצא הכי עשיר בשדות
+# (city_code/city_name_he) מנוסה ראשון.
 CBS_RESOURCE_ID_CANDIDATES = [
     "8f714b6f-c35c-4b40-a0e7-547b675eee0e",  # אושר עובד בפועל - שדות: city_code, city_name_he
-    "5938933b-35ce-4a73-9026-59ea377ee1b0",
     "d4901968-dad3-4845-a9b0-a57d027f11ab",
-    "b7cf8f14-64a2-4b33-8d4b-edb286fdbd37",  # הישן - נשאר כניסיון אחרון ליתר ביטחון
+    "b7cf8f14-64a2-4b33-8d4b-edb286fdbd37",  # הישן - נשאר כניסיון נוסף ליתר ביטחון
 ]
+
+# קובץ סטטי בתוך הריפו עם מיפוי קוד יישוב -> שם יישוב, כגיבוי אחרון למקרה
+# שה-API החי נכשל לגמרי (data.gov.il הוכיח את עצמו כלא אמין - IDs מתחלפים,
+# ולפעמים מחזיר 404 לכל המועמדים באותו יום ריצה). קודי יישובים בישראל כמעט
+# ולא משתנים, אז קובץ סטטי הוא גיבוי סביר. הקובץ מתעדכן אוטומטית בכל פעם
+# שה-API החי כן מצליח.
+CITY_CODE_FALLBACK_PATH = os.path.join("data", "city_code_fallback.json")
+
 
 def load_city_code_lookup():
     """
     מוריד את טבלת קודי היישובים הרשמית (משרד הפנים/למ"ס) דרך data.gov.il,
     וממפה קוד יישוב -> שם יישוב. מנסה כמה resource_id מועמדים ברצף (כי הם
-    מתחלפים מדי פעם) - הראשון שמצליח נבחר. אם אף אחד לא עובד, מחזיר מיפוי
-    ריק (לא מפיל את כל הסקריפט - פשוט נשארים עם הקוד הגולמי).
+    מתחלפים מדי פעם) - הראשון שמצליח נבחר. אם ה-API החי מצליח, מרעננים גם
+    את קובץ הגיבוי הסטטי (data/city_code_fallback.json) עם הנתונים העדכניים.
+    אם כל המועמדים נכשלים, נופלים חזרה לקובץ הסטטי (לא מיפוי ריק).
     """
     for resource_id in CBS_RESOURCE_ID_CANDIDATES:
         try:
@@ -177,12 +188,27 @@ def load_city_code_lookup():
                 if code:
                     lookup[code] = name
             if lookup:
+                try:
+                    os.makedirs(os.path.dirname(CITY_CODE_FALLBACK_PATH), exist_ok=True)
+                    with open(CITY_CODE_FALLBACK_PATH, "w", encoding="utf-8") as f:
+                        json.dump(lookup, f, ensure_ascii=False, indent=2)
+                    print(f"  רוענן קובץ הגיבוי הסטטי: {CITY_CODE_FALLBACK_PATH} ({len(lookup)} רשומות)")
+                except Exception as e:
+                    print(f"  ⚠️  לא הצלחנו לרענן את קובץ הגיבוי הסטטי ({e}) - ממשיכים בכל זאת")
                 return lookup
             print(f"  ⚠️  resource_id {resource_id} החזיר תשובה ריקה - מנסה את הבא")
         except Exception as e:
             print(f"  ⚠️  resource_id {resource_id} נכשל ({e}) - מנסה את הבא")
-    print("  ⚠️  כל ה-resource_id המועמדים נכשלו - ממשיכים עם קוד גולמי בלבד")
-    return {}
+
+    print("  ⚠️  כל ה-resource_id המועמדים נכשלו - נופלים לקובץ הגיבוי הסטטי")
+    try:
+        with open(CITY_CODE_FALLBACK_PATH, "r", encoding="utf-8") as f:
+            fallback_lookup = json.load(f)
+        print(f"  נטען קובץ גיבוי סטטי: {CITY_CODE_FALLBACK_PATH} ({len(fallback_lookup)} רשומות)")
+        return fallback_lookup
+    except Exception as e:
+        print(f"  ⚠️  גם טעינת קובץ הגיבוי הסטטי נכשלה ({e}) - ממשיכים עם קוד גולמי בלבד")
+        return {}
 
 
 print("\n" + "=" * 60)
