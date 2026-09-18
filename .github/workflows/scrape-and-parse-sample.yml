@@ -17,6 +17,8 @@ name: Scrape And Parse Sample
 jobs:
   scrape-and-parse:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,6 +36,24 @@ jobs:
 
       - name: Run transform to dashboard schema
         run: python transform_real_data.py
+
+      - name: Commit refreshed city code fallback (if changed)
+        # transform_real_data.py מרענן את data/city_code_fallback.json בדיסק
+        # כל פעם שה-API החי של data.gov.il מצליח. השלב הזה מוודא שהריענון
+        # הזה גם נשמר בפועל בריפו (git), ולא רק על הדיסק הזמני של ה-runner -
+        # אחרת קובץ הגיבוי הסטטי היה נשאר קפוא לנצח בגרסה שנשמרה בפעם הראשונה.
+        if: github.ref == 'refs/heads/main'
+        run: |
+          if ! git diff --quiet -- data/city_code_fallback.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/city_code_fallback.json
+            git commit -m "chore: refresh city code fallback data [skip ci]"
+            git push
+            echo "עודכן ונדחף data/city_code_fallback.json עם נתונים טריים."
+          else
+            echo "אין שינוי ב-data/city_code_fallback.json - לא נדרש commit."
+          fi
 
       - name: Upload parsed CSV files (for inspection)
         if: always()
