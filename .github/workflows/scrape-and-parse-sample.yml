@@ -54,6 +54,11 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git commit -m "chore: refresh fallback/cache/dashboard data [skip ci]"
+            # מישהו יכול לדחוף ל-main בזמן שהריצה הזו (שאורכת כ-20 דקות) עדיין
+            # רצה - אז main המרוחק עלול להתקדם לפני שמגיעים לכאן. git pull
+            # --rebase לפני push מיישר את ה-commit שלנו על גבי מה שהתקדם,
+            # במקום שה-push יידחה ("fetch first") ויפיל את השלב הזה בכלל.
+            git pull --rebase origin main
             git push
             echo "עודכן ונדחף data/ עם נתונים טריים."
           else

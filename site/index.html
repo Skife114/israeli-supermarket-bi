@@ -89,6 +89,16 @@
   .prod-name{font-weight:600;}
   .prod-meta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
   .table-scroll{max-height:560px;overflow:auto;}
+  .pagination-row{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    padding-top:12px; font-size:13px; color:var(--ink-soft);
+  }
+  .pagination-row button{
+    border:1.5px solid var(--line); background:var(--surface); border-radius:8px;
+    padding:6px 12px; font-family:inherit; font-size:13px; font-weight:600;
+    color:var(--ink); cursor:pointer;
+  }
+  .pagination-row button:disabled{opacity:.4; cursor:default;}
   .price-cell{
     display:inline-flex;align-items:center;gap:5px;min-width:64px;justify-content:center;
     padding:4px 7px;border-radius:8px;font-weight:700;
@@ -240,6 +250,7 @@
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+      <div class="pagination-row" id="paginationRow"></div>
     </div>
 
     <div class="card">
@@ -331,12 +342,15 @@ async function loadDashboardData(){
   Object.values(monthlyMap).forEach(arr => arr.sort((a,b)=>a.month.localeCompare(b.month)));
 
   // ---- מצב (state) ----
+  const PAGE_SIZE = 100; // מציגים עמוד בכל פעם, לא את כל אלפי המוצרים בבת אחת -
+  // בלי זה, כל הקלדה/סינון היה בונה מחדש עשרות אלפי שורות DOM ומרגיש איטי.
   const state = {
     chains: new Set(chains.map(c => c.id)),
     category: 'all',
     manufacturer: 'all',
     search: '',
     period: 'month',
+    page: 0,
   };
 
   // ---- בניית פילטרים ----
@@ -361,6 +375,7 @@ async function loadDashboardData(){
         chip.style.background = c.color;
         chip.style.borderColor = c.color;
       }
+      state.page = 0;
       render();
     });
     chainChipsEl.appendChild(chip);
@@ -373,7 +388,7 @@ async function loadDashboardData(){
     opt.value = cat; opt.textContent = cat === 'all' ? 'כל הקטגוריות' : cat;
     categorySelect.appendChild(opt);
   });
-  categorySelect.addEventListener('change', () => { state.category = categorySelect.value; render(); });
+  categorySelect.addEventListener('change', () => { state.category = categorySelect.value; state.page = 0; render(); });
 
   const manufacturerSelect = document.getElementById('manufacturerSelect');
   function refreshManufacturerOptions(){
@@ -388,10 +403,11 @@ async function loadDashboardData(){
     if(!mans.includes(state.manufacturer)) state.manufacturer = 'all';
     manufacturerSelect.value = state.manufacturer;
   }
-  manufacturerSelect.addEventListener('change', () => { state.manufacturer = manufacturerSelect.value; render(); });
+  manufacturerSelect.addEventListener('change', () => { state.manufacturer = manufacturerSelect.value; state.page = 0; render(); });
 
   document.getElementById('searchInput').addEventListener('input', (e) => {
     state.search = e.target.value.trim();
+    state.page = 0;
     render();
   });
 
@@ -416,6 +432,7 @@ async function loadDashboardData(){
       chip.style.background = chains[i].color;
       chip.style.borderColor = chains[i].color;
     });
+    state.page = 0;
     render();
   });
 
@@ -465,18 +482,42 @@ async function loadDashboardData(){
   }
 
   // ---- רינדור טבלה ----
+  function renderPagination(totalCount){
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const el = document.getElementById('paginationRow');
+    if(totalPages <= 1){ el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <button id="pagePrevBtn" ${state.page === 0 ? 'disabled' : ''}>‹ הקודם</button>
+      <span>עמוד ${state.page + 1} מתוך ${totalPages}</span>
+      <button id="pageNextBtn" ${state.page >= totalPages - 1 ? 'disabled' : ''}>הבא ›</button>
+    `;
+    document.getElementById('pagePrevBtn')?.addEventListener('click', () => {
+      state.page = Math.max(0, state.page - 1);
+      renderTable();
+    });
+    document.getElementById('pageNextBtn')?.addEventListener('click', () => {
+      state.page = Math.min(totalPages - 1, state.page + 1);
+      renderTable();
+    });
+  }
+
   function renderTable(){
-    const prods = filteredProducts();
+    const allProds = filteredProducts();
     const acts = activeChains();
     const headRow = document.getElementById('tableHeadRow');
     headRow.innerHTML = '<th>מוצר</th>' + acts.map(c => `<th><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-left:4px;"></span>${c.name_he}</th>`).join('');
 
     const body = document.getElementById('tableBody');
-    if(prods.length === 0){
+    if(allProds.length === 0){
       body.innerHTML = `<tr><td colspan="${acts.length+1}"><div class="empty-state">לא נמצאו מוצרים התואמים את הסינון. נסו לרוקן חלק מהפילטרים.</div></td></tr>`;
-      updateTitles(prods, acts);
+      updateTitles(allProds, acts);
+      renderPagination(0);
       return;
     }
+
+    const totalPages = Math.max(1, Math.ceil(allProds.length / PAGE_SIZE));
+    if(state.page >= totalPages) state.page = totalPages - 1;
+    const prods = allProds.slice(state.page * PAGE_SIZE, (state.page + 1) * PAGE_SIZE);
 
     body.innerHTML = prods.map(p => {
       const rowPrices = acts.map(c => currentAvgMap[c.id+'|'+p.barcode]);
@@ -512,7 +553,8 @@ async function loadDashboardData(){
       </tr>`;
     }).join('');
 
-    updateTitles(prods, acts);
+    updateTitles(allProds, acts);
+    renderPagination(allProds.length);
   }
 
   function updateTitles(prods, acts){
