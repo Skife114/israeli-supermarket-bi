@@ -360,15 +360,50 @@ def geocode_store(address, city_name):
     return None, None, "failed"
 
 
+# קובץ מטמון (cache) בתוך הריפו: store_id -> {lat, lng, location_precision}
+# מהריצה המוצלחת האחרונה. בדיוק כמו data/city_code_fallback.json - Nominatim
+# הוא שירות חיצוני חינמי, ואם הוא נופל/חוסם/מגביל קצב עבור כל הסניפים באותו
+# יום ריצה, עדיף לחזור לקואורדינטות הידועות האחרונות מאשר להשאיר את כל
+# הסניפים בלי מיקום. מתעדכן (מתרענן) בכל פעם שגיאוקודינג חי מצליח לסניף.
+GEOCODE_CACHE_PATH = os.path.join("data", "geocode_cache.json")
+
+
+def load_geocode_cache():
+    try:
+        with open(GEOCODE_CACHE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_geocode_cache(cache):
+    try:
+        os.makedirs(os.path.dirname(GEOCODE_CACHE_PATH), exist_ok=True)
+        with open(GEOCODE_CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"  ⚠️  לא הצלחנו לשמור את קובץ מטמון הגיאוקודינג ({e}) - ממשיכים בכל זאת")
+
+
 print("\n" + "=" * 60)
 print(f"גיאוקודינג - ממיר כתובת לקואורדינטות עבור {len(all_stores)} סניפים")
 print("(זה איטי בכוונה - שירות חינמי עם מגבלת בקשה אחת בשנייה, אמור לקחת כ-10 דקות)")
 print("=" * 60)
 
+geocode_cache = load_geocode_cache()
+print(f"נטען מטמון גיאוקודינג קיים: {len(geocode_cache)} סניפים (מריצות קודמות)")
+
 geocoded_exact = 0
 geocoded_city = 0
+geocoded_from_cache = 0
 for i, s in enumerate(all_stores):
     lat, lng, precision = geocode_store(s["address"], s["city_name"])
+    if lat is not None:
+        geocode_cache[s["store_id"]] = {"lat": lat, "lng": lng, "location_precision": precision}
+    elif s["store_id"] in geocode_cache:
+        cached = geocode_cache[s["store_id"]]
+        lat, lng, precision = cached["lat"], cached["lng"], f'{cached["location_precision"]}_cached'
+        geocoded_from_cache += 1
     s["lat"] = lat
     s["lng"] = lng
     s["location_precision"] = precision
@@ -377,12 +412,17 @@ for i, s in enumerate(all_stores):
     elif precision == "city_fallback":
         geocoded_city += 1
     if (i + 1) % 50 == 0:
-        print(f"  התקדמות: {i+1}/{len(all_stores)} (מדויק: {geocoded_exact}, ברמת עיר: {geocoded_city})")
+        print(f"  התקדמות: {i+1}/{len(all_stores)} (מדויק: {geocoded_exact}, ברמת עיר: {geocoded_city}, "
+              f"ממטמון: {geocoded_from_cache})")
     time.sleep(1.1)  # מדיניות השימוש ההוגן של Nominatim - בקשה אחת בשנייה, לא יותר
 
-geocoded_ok = geocoded_exact + geocoded_city
+save_geocode_cache(geocode_cache)
+print(f"  נשמר מטמון גיאוקודינג מעודכן: {len(geocode_cache)} סניפים")
+
+geocoded_ok = geocoded_exact + geocoded_city + geocoded_from_cache
 print(f"\nגיאוקודינג הסתיים: {geocoded_ok} מתוך {len(all_stores)} סניפים קיבלו קואורדינטות")
-print(f"  מתוכם: {geocoded_exact} בדיוק כתובת מלאה, {geocoded_city} ברמת עיר בלבד (fallback)")
+print(f"  מתוכם: {geocoded_exact} בדיוק כתובת מלאה, {geocoded_city} ברמת עיר בלבד (fallback), "
+      f"{geocoded_from_cache} ממטמון (Nominatim נכשל אבל היה לנו מיקום ידוע מריצה קודמת)")
 
 with open("stores_transformed.json", "w", encoding="utf-8") as f:
     json.dump(all_stores, f, ensure_ascii=False, indent=2)
