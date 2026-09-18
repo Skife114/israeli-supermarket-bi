@@ -101,8 +101,10 @@
   .pagination-row button:disabled{opacity:.4; cursor:default;}
   .price-cell{
     display:inline-flex;align-items:center;gap:5px;min-width:64px;justify-content:center;
-    padding:4px 7px;border-radius:8px;font-weight:700;
+    padding:4px 7px;border-radius:8px;font-weight:700;text-decoration:none;
   }
+  a.price-cell{cursor:pointer;}
+  a.price-cell:hover{filter:brightness(0.95);}
   .arrow-up{color:var(--warn);}
   .arrow-down{color:var(--accent);}
   .arrow-flat{color:var(--ink-soft);}
@@ -320,6 +322,15 @@ async function loadDashboardData(){
   const DATA = await loadDashboardData();
   const { chains, products, current_avg, monthly_history, recent_weekly } = DATA;
 
+  // קישור למוצר באתר הרשת - רק לרשתות שבפועל תומכות בחיפוש לפי ברקוד עם
+  // התאמה מדויקת (נבדק ידנית מול האתרים עצמם): שופרסל וטיב טעם. רמי לוי
+  // ויוחננוף לא מחזירים תוצאה לפי ברקוד, אז אין קישור לגביהן - לינק שגוי
+  // או לעמוד "לא נמצא" גרוע יותר מאין קישור בכלל.
+  const CHAIN_PRODUCT_URL = {
+    shufersal: (barcode) => `https://www.shufersal.co.il/online/he/search?text=${barcode}`,
+    tiv_taam: (barcode) => `https://www.tivtaam.co.il/search/${barcode}`,
+  };
+
   const chainById = Object.fromEntries(chains.map(c => [c.id, c]));
   const productByBarcode = Object.fromEntries(products.map(p => [p.barcode, p]));
 
@@ -536,11 +547,14 @@ async function loadDashboardData(){
           else if(pctChange < -0.005){ arrow = '▼'; arrowClass = 'arrow-down'; }
           else { arrow = '–'; arrowClass = 'arrow-flat'; }
         }
+        const priceInner = `₪${rec.avg_price.toFixed(2)}
+            <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>`;
+        const urlBuilder = CHAIN_PRODUCT_URL[c.id];
+        const priceEl = urlBuilder
+          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}22;color:${bg};">${priceInner}</a>`
+          : `<span class="price-cell" style="background:${bg}22;color:${bg};">${priceInner}</span>`;
         return `<td>
-          <span class="price-cell" style="background:${bg}22;color:${bg};">
-            ₪${rec.avg_price.toFixed(2)}
-            <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>
-          </span>
+          ${priceEl}
           ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
         </td>`;
       }).join('');
