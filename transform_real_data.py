@@ -459,3 +459,31 @@ with open("stores_transformed.json", "w", encoding="utf-8") as f:
 print("\nדוגמה לשלוש רשומות סניף עם קואורדינטות:")
 for s in all_stores[:3]:
     print(" ", s)
+
+# ============================================================
+# חלק ד: פרסום נתונים לדשבורד (site/data) - קבצים סטטיים שה-workflow
+# מחזיר לריפו בסוף כל ריצה מוצלחת (בדיוק כמו data/city_code_fallback.json
+# ו-data/geocode_cache.json), כדי שאתר סטטי (Netlify) יוכל להגיש אותם.
+# ============================================================
+print("\n" + "=" * 60)
+print("פרסום נתונים לדשבורד (site/data)")
+print("=" * 60)
+
+SITE_DATA_DIR = "site/data"
+os.makedirs(SITE_DATA_DIR, exist_ok=True)
+
+with open(os.path.join(SITE_DATA_DIR, "chains.json"), "w", encoding="utf-8") as f:
+    json.dump(list(all_chains.values()), f, ensure_ascii=False)
+with open(os.path.join(SITE_DATA_DIR, "stores.json"), "w", encoding="utf-8") as f:
+    json.dump(all_stores, f, ensure_ascii=False)
+
+if all_products:
+    products_combined.to_json(os.path.join(SITE_DATA_DIR, "products.json"), orient="records", force_ascii=False)
+    current_avg.to_json(os.path.join(SITE_DATA_DIR, "current_avg.json"), orient="records", force_ascii=False)
+else:
+    with open(os.path.join(SITE_DATA_DIR, "products.json"), "w", encoding="utf-8") as f:
+        json.dump([], f)
+    with open(os.path.join(SITE_DATA_DIR, "current_avg.json"), "w", encoding="utf-8") as f:
+        json.dump([], f)
+
+print(f"  נכתבו קבצי דשבורד ל-{SITE_DATA_DIR}/: chains.json, stores.json, products.json, current_avg.json")

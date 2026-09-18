@@ -37,25 +37,27 @@ jobs:
       - name: Run transform to dashboard schema
         run: python transform_real_data.py
 
-      - name: Commit refreshed fallback and cache data (if changed)
-        # transform_real_data.py מרענן על הדיסק שני קבצי גיבוי/מטמון:
-        # data/city_code_fallback.json (בכל הצלחה של data.gov.il) ו-
-        # data/geocode_cache.json (מצטבר עם כל geocoding מוצלח מול Nominatim).
-        # השלב הזה מוודא שהריענון נשמר בפועל בריפו (git) ולא רק על הדיסק
-        # הזמני של ה-runner - אחרת הקבצים היו נשארים קפואים לנצח. משתמשים
-        # ב-git add לפני הבדיקה כדי שזה יעבוד גם בפעם הראשונה שקובץ המטמון
+      - name: Commit refreshed fallback/cache/dashboard data (if changed)
+        # transform_real_data.py מרענן על הדיסק כמה קבצים שצריכים להישמר
+        # בפועל בריפו (git) ולא רק על הדיסק הזמני של ה-runner:
+        # - data/city_code_fallback.json (בכל הצלחה של data.gov.il)
+        # - data/geocode_cache.json (מצטבר עם כל geocoding מוצלח מול Nominatim)
+        # - site/data/*.json (chains/stores/products/current_avg לדשבורד הסטטי -
+        #   Netlify עושה auto-deploy מ-git, אז ה-commit הזה הוא גם מה שמרענן
+        #   את האתר החי בכל ריצה יומית מוצלחת)
+        # משתמשים ב-git add לפני הבדיקה כדי שזה יעבוד גם בפעם הראשונה שקובץ
         # נוצר (קובץ חדש שעדיין לא במעקב git, לא רק שינוי בקובץ קיים).
         if: github.ref == 'refs/heads/main'
         run: |
-          git add data/city_code_fallback.json data/geocode_cache.json
+          git add data/city_code_fallback.json data/geocode_cache.json site/data/*.json
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: refresh city code fallback and geocode cache [skip ci]"
+            git commit -m "chore: refresh fallback/cache/dashboard data [skip ci]"
             git push
             echo "עודכן ונדחף data/ עם נתונים טריים."
           else
-            echo "אין שינוי בקבצי data/ - לא נדרש commit."
+            echo "אין שינוי בקבצים - לא נדרש commit."
           fi
 
       - name: Upload parsed CSV files (for inspection)

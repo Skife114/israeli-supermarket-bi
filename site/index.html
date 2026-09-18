@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>השוואת מחירי רשתות מזון בישראל</title>
+<meta name="description" content="השוואת מחירים אינטראקטיבית בין הרשתות המובילות בישראל: טבלה מסוננת, מגמות מחיר לאורך זמן, מבצעים, סל קניות אישי ומפת סניפים.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg: #F5F6F1;
+    --surface: #FFFFFF;
+    --ink: #1C2B2B;
+    --ink-soft: #5B6B69;
+    --line: #DCDFD5;
+    --accent: #0E7C66;      /* זול / חיובי */
+    --accent-soft: #E3F1EC;
+    --warn: #B33951;        /* יקר / עלייה */
+    --warn-soft: #F7E7EA;
+    --chip-bg: #EDEFE7;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(28,43,43,.06), 0 4px 16px rgba(28,43,43,.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:'Assistant',sans-serif; font-feature-settings:"tnum" 1; font-variant-numeric: tabular-nums;}
+  h1,h2,h3,.display{font-family:'Rubik',sans-serif;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 60px;}
+
+  header.hero{padding:18px 4px 22px;}
+  header.hero h1{font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-0.02em;}
+  header.hero p{margin:0;color:var(--ink-soft);font-size:15px;}
+
+  .toolbar{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    padding:14px 0 16px; border-bottom:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;max-width:420px;}
+  .chip{
+    padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);
+    background:var(--surface); font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:6px; user-select:none;
+    transition:.15s ease;
+  }
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .chip.active{border-color:transparent;color:#fff;}
+  select, input[type=text]{
+    padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--surface); font-family:inherit; font-size:14px; color:var(--ink);
+    min-width:150px;
+  }
+  input[type=text]{min-width:200px;}
+  .segmented{display:flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;}
+  .segmented button{
+    border:none;background:var(--surface);padding:8px 14px;font-family:inherit;
+    font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+  }
+  .segmented button.active{background:var(--ink);color:#fff;}
+  .reset-btn{
+    border:none;background:none;color:var(--ink-soft);font-size:13px;font-weight:600;
+    text-decoration:underline;cursor:pointer;padding:8px 4px;
+  }
+
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;margin-top:22px;align-items:start;}
+  @media (max-width:920px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 20px;}
+  .card h2{font-size:16px;margin:0 0 12px;font-weight:700;}
+  .card h2 small{display:block;font-family:'Assistant',sans-serif;font-weight:500;color:var(--ink-soft);font-size:12px;margin-top:2px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:center;font-weight:700;color:var(--ink-soft);font-size:11.5px;
+    text-transform:none; padding:6px 4px; border-bottom:2px solid var(--line);
+    position:sticky; top:0; background:var(--surface);
+  }
+  thead th:first-child{text-align:right;}
+  tbody td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle;}
+  tbody td:first-child{text-align:right;}
+  .prod-name{font-weight:600;}
+  .prod-meta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
+  .table-scroll{max-height:560px;overflow:auto;}
+  .price-cell{
+    display:inline-flex;align-items:center;gap:5px;min-width:64px;justify-content:center;
+    padding:4px 7px;border-radius:8px;font-weight:700;
+  }
+  .arrow-up{color:var(--warn);}
+  .arrow-down{color:var(--accent);}
+  .arrow-flat{color:var(--ink-soft);}
+  .no-data{color:var(--ink-soft);font-size:12px;}
+  .empty-state{padding:40px 10px;text-align:center;color:var(--ink-soft);}
+
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;}
+  .legend-scale{flex:1;height:8px;border-radius:999px;background:linear-gradient(90deg,var(--accent),#F4E3B2,var(--warn));}
+
+  .chart-box{position:relative;height:230px;}
+  .chart-box + .chart-box{margin-top:22px;}
+
+  footer.note{margin-top:26px;font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  footer.note b{color:var(--ink);}
+
+  /* --- תג מבצע לחיץ --- */
+  .promo-badge{
+    display:inline-flex; align-items:center; gap:3px; margin-top:3px;
+    font-size:11px; font-weight:700; color:#fff; background:var(--warn);
+    padding:2px 7px; border-radius:999px; cursor:pointer; border:none;
+    font-family:inherit;
+  }
+  .promo-badge:hover{filter:brightness(1.08);}
+
+  /* --- מודל מבצע --- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,28,28,.45); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal-box{
+    background:var(--surface); border-radius:16px; max-width:380px; width:100%;
+    padding:22px 22px 20px; box-shadow:0 12px 40px rgba(0,0,0,.25); position:relative;
+  }
+  .modal-close{
+    position:absolute; top:12px; left:12px; border:none; background:var(--chip-bg);
+    width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; color:var(--ink-soft);
+  }
+  .modal-box h3{margin:0 0 4px;font-size:17px;}
+  .modal-box .modal-chain{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+  .modal-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .modal-row:last-child{border-bottom:none;}
+  .modal-row .lbl{color:var(--ink-soft);}
+  .modal-save{
+    margin-top:12px;background:var(--accent-soft);color:var(--accent);border-radius:10px;
+    padding:10px 12px;font-weight:700;font-size:14px;text-align:center;
+  }
+
+  /* --- סל קניות אישי --- */
+  .basket-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .basket-controls button{
+    background:var(--ink); color:#fff; border:none; border-radius:10px; padding:9px 16px;
+    font-family:inherit; font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  .basket-controls input[type=number]{width:70px;min-width:unset;}
+  .autocomplete-wrap{position:relative;flex:1;min-width:240px;}
+  .autocomplete-wrap input[type=text]{width:100%;min-width:unset;}
+  .suggestions{
+    position:absolute; top:calc(100% + 4px); right:0; left:0; z-index:30;
+    background:var(--surface); border:1.5px solid var(--line); border-radius:12px;
+    box-shadow:var(--shadow); max-height:260px; overflow:auto;
+  }
+  .suggestions.hidden{display:none;}
+  .suggestion-item{
+    padding:9px 12px; font-size:13.5px; cursor:pointer; display:flex; justify-content:space-between; gap:8px;
+  }
+  .suggestion-item:hover, .suggestion-item.highlighted{background:var(--accent-soft);}
+  .suggestion-item .s-cat{color:var(--ink-soft); font-size:11.5px;}
+  .suggestion-empty{padding:10px 12px;font-size:13px;color:var(--ink-soft);}
+  .basket-items{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .basket-item-chip{
+    display:flex;align-items:center;gap:8px;background:var(--chip-bg);border-radius:999px;
+    padding:6px 6px 6px 12px;font-size:13px;font-weight:600;
+  }
+  .basket-item-chip button{
+    background:var(--surface);border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;
+    font-size:12px;color:var(--warn);
+  }
+  #basketTable td, #basketTable th{padding:8px 6px;}
+  .basket-total-row td{border-top:2px solid var(--ink);font-weight:800;}
+  .missing-note{font-size:10.5px;color:var(--ink-soft);font-weight:500;display:block;}
+  .best-total{color:var(--accent);}
+  .worst-total{color:var(--warn);}
+
+  /* --- מפת סניפים --- */
+  #branchMap{height:460px;border-radius:12px;margin-top:6px;z-index:1;}
+  .map-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--ink-soft);}
+  .map-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .map-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .store-popup h4{margin:0 0 4px;font-size:14px;font-family:'Rubik',sans-serif;}
+  .store-popup .sp-addr{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .store-popup table{width:100%;font-size:12px;}
+  .store-popup td{padding:2px 0;border:none;text-align:right;}
+  .store-popup td:first-child{color:var(--ink-soft);width:60%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>השוואת מחירי רשתות מזון בישראל</h1>
+    <p>השוואת מחירים בין 5 הרשתות המובילות, לפי קטגוריה, יצרן ותקופה — כולל מגמות לאורך זמן.</p>
+  </header>
+
+  <div class="toolbar">
+    <div class="field">
+      <label>רשתות</label>
+      <div class="chips" id="chainChips"></div>
+    </div>
+    <div class="field">
+      <label>קטגוריה</label>
+      <select id="categorySelect"></select>
+    </div>
+    <div class="field">
+      <label>יצרן</label>
+      <select id="manufacturerSelect"></select>
+    </div>
+    <div class="field">
+      <label>חיפוש מוצר</label>
+      <input type="text" id="searchInput" placeholder="לדוגמה: חלב, קולה, עוף...">
+    </div>
+    <div class="field">
+      <label>תקופת השוואה</label>
+      <div class="segmented" id="periodSegment">
+        <button data-period="week">שבוע</button>
+        <button data-period="month">חודש</button>
+        <button data-period="quarter">רבעון</button>
+        <button data-period="year">שנה</button>
+      </div>
+    </div>
+    <button class="reset-btn" id="resetBtn">איפוס סינון</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 id="tableTitle">טבלת השוואת מחירים <small id="tableSubtitle"></small></h2>
+      <div class="legend-row">
+        <span>זול יותר</span>
+        <div class="legend-scale"></div>
+        <span>יקר יותר</span>
+      </div>
+      <div class="table-scroll">
+        <table id="priceTable">
+          <thead><tr id="tableHeadRow"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>מגמת מחיר <small id="trendSubtitle">ממוצע המוצרים המסוננים, לפי רשת</small></h2>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      <h2 style="margin-top:22px;">מחיר ממוצע נוכחי לפי רשת <small>עבור המוצרים המסוננים</small></h2>
+      <div class="chart-box"><canvas id="barChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>סל קניות אישי <small>חפשו והוסיפו מוצרים, וראו איזו רשת הכי משתלמת לסל שלכם בסה"כ</small></h2>
+    <div class="basket-controls">
+      <div class="autocomplete-wrap">
+        <input type="text" id="basketSearchInput" placeholder="חפשו מוצר להוספה, לדוגמה: פסטה, טונה, אורז..." autocomplete="off">
+        <div id="basketSuggestions" class="suggestions hidden"></div>
+      </div>
+      <input type="number" id="basketQtyInput" min="1" value="1" title="כמות">
+      <button id="basketAddBtn">הוסף לסל</button>
+      <button id="basketClearBtn" style="background:var(--warn);">רוקן סל</button>
+    </div>
+    <div class="basket-items" id="basketItemsList"></div>
+    <div class="table-scroll">
+      <table id="basketTable">
+        <thead><tr id="basketHeadRow"></tr></thead>
+        <tbody id="basketBody"></tbody>
+        <tfoot id="basketFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>מפת סניפים <small>בחרו רשתות כדי לראות את הסניפים שלהן על המפה, ולחצו על סניף לפרטים מלאים</small></h2>
+    <div class="chips" id="mapChainChips" style="margin-bottom:12px;"></div>
+    <div id="branchMap"></div>
+    <div class="map-legend" id="mapLegend"></div>
+  </div>
+
+  <footer class="note">
+    <b>הערה:</b> הנתונים המוצגים כאן הם נתוני דוגמה (Sample Data) שנוצרו לצורך בניית האתר ובדיקתו, ואינם משקפים מחירים אמיתיים.
+    בשלב הבא הם יוחלפו בנתונים אמיתיים מקבצי שקיפות המחירים הרשמיים של הרשתות.
+  </footer>
+</div>
+
+<div class="modal-overlay hidden" id="promoModal">
+  <div class="modal-box">
+    <button class="modal-close" id="closeModalBtn" aria-label="סגור חלונית">✕</button>
+    <h3 id="modalTitle"></h3>
+    <div class="modal-chain" id="modalChain"></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+async function loadDashboardData(){
+  const [chains, stores, products, current_avg] = await Promise.all([
+    fetch('data/chains.json').then(r => r.json()),
+    fetch('data/stores.json').then(r => r.json()),
+    fetch('data/products.json').then(r => r.json()),
+    fetch('data/current_avg.json').then(r => r.json()),
+  ]);
+  return { chains, stores, products, current_avg, monthly_history: [], recent_weekly: [] };
+}
+</script>
+<script>
+(async function(){
+  const DATA = await loadDashboardData();
+  const { chains, products, current_avg, monthly_history, recent_weekly } = DATA;
+
+  const chainById = Object.fromEntries(chains.map(c => [c.id, c]));
+  const productByBarcode = Object.fromEntries(products.map(p => [p.barcode, p]));
+
+  // ---- מבני עזר לחיפוש מהיר ----
+  const currentAvgMap = {}; // key: chain_id|barcode -> {avg_price, n_on_sale, n_stores}
+  current_avg.forEach(r => currentAvgMap[r.chain_id + '|' + r.barcode] = r);
+
+  const monthlyMap = {}; // key: chain_id|barcode -> [{month, price}, ...] sorted
+  monthly_history.forEach(r => {
+    const k = r.chain_id + '|' + r.barcode;
+    (monthlyMap[k] = monthlyMap[k] || []).push(r);
+  });
+
+  const weeklyMap = {};
+  recent_weekly.forEach(r => {
+    const k = r.chain_id + '|' + r.barcode;
+    (weeklyMap[k] = weeklyMap[k] || []).push(r);
+  });
+  Object.values(weeklyMap).forEach(arr => arr.sort((a,b)=>a.week-b.week));
+  Object.values(monthlyMap).forEach(arr => arr.sort((a,b)=>a.month.localeCompare(b.month)));
+
+  // ---- מצב (state) ----
+  const state = {
+    chains: new Set(chains.map(c => c.id)),
+    category: 'all',
+    manufacturer: 'all',
+    search: '',
+    period: 'month',
+  };
+
+  // ---- בניית פילטרים ----
+  const chainChipsEl = document.getElementById('chainChips');
+  chains.forEach(c => {
+    const chip = document.createElement('div');
+    chip.className = 'chip active';
+    chip.style.background = c.color;
+    chip.style.borderColor = c.color;
+    chip.dataset.chain = c.id;
+    chip.innerHTML = `<span>${c.name_he}</span>`;
+    chip.addEventListener('click', () => {
+      if(state.chains.has(c.id)){
+        if(state.chains.size === 1) return; // תמיד להשאיר לפחות רשת אחת
+        state.chains.delete(c.id);
+        chip.classList.remove('active');
+        chip.style.background = '';
+        chip.style.borderColor = '';
+      } else {
+        state.chains.add(c.id);
+        chip.classList.add('active');
+        chip.style.background = c.color;
+        chip.style.borderColor = c.color;
+      }
+      render();
+    });
+    chainChipsEl.appendChild(chip);
+  });
+
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
+  const categorySelect = document.getElementById('categorySelect');
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat; opt.textContent = cat === 'all' ? 'כל הקטגוריות' : cat;
+    categorySelect.appendChild(opt);
+  });
+  categorySelect.addEventListener('change', () => { state.category = categorySelect.value; render(); });
+
+  const manufacturerSelect = document.getElementById('manufacturerSelect');
+  function refreshManufacturerOptions(){
+    const pool = state.category === 'all' ? products : products.filter(p => p.category === state.category);
+    const mans = ['all', ...Array.from(new Set(pool.map(p => p.manufacturer)))];
+    manufacturerSelect.innerHTML = '';
+    mans.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m === 'all' ? 'כל היצרנים' : m;
+      manufacturerSelect.appendChild(opt);
+    });
+    if(!mans.includes(state.manufacturer)) state.manufacturer = 'all';
+    manufacturerSelect.value = state.manufacturer;
+  }
+  manufacturerSelect.addEventListener('change', () => { state.manufacturer = manufacturerSelect.value; render(); });
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    state.search = e.target.value.trim();
+    render();
+  });
+
+  const periodButtons = Array.from(document.querySelectorAll('#periodSegment button'));
+  periodButtons.forEach(btn => {
+    if(btn.dataset.period === state.period) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      state.period = btn.dataset.period;
+      periodButtons.forEach(b => b.classList.toggle('active', b === btn));
+      render();
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    state.category = 'all'; state.manufacturer = 'all'; state.search = '';
+    categorySelect.value = 'all';
+    refreshManufacturerOptions();
+    document.getElementById('searchInput').value = '';
+    state.chains = new Set(chains.map(c => c.id));
+    Array.from(chainChipsEl.children).forEach((chip,i) => {
+      chip.classList.add('active');
+      chip.style.background = chains[i].color;
+      chip.style.borderColor = chains[i].color;
+    });
+    render();
+  });
+
+  // ---- לוגיקת חישוב ----
+  function filteredProducts(){
+    return products.filter(p => {
+      if(state.category !== 'all' && p.category !== state.category) return false;
+      if(state.manufacturer !== 'all' && p.manufacturer !== state.manufacturer) return false;
+      if(state.search && !p.name.includes(state.search) && !p.manufacturer.includes(state.search)) return false;
+      return true;
+    });
+  }
+
+  function activeChains(){
+    return chains.filter(c => state.chains.has(c.id));
+  }
+
+  // מגמה: מחזיר {startPrice, endPrice} לפי התקופה שנבחרה, עבור רשת+ברקוד
+  function trendForPeriod(chainId, barcode, period){
+    if(period === 'week'){
+      const arr = weeklyMap[chainId+'|'+barcode] || [];
+      if(arr.length < 2) return null;
+      return { start: arr[0].price, end: arr[arr.length-1].price };
+    }
+    const arr = monthlyMap[chainId+'|'+barcode] || [];
+    if(arr.length < 2) return null;
+    let n;
+    if(period === 'month') n = 2;
+    else if(period === 'quarter') n = 4;
+    else n = arr.length; // year -> כל הטווח שיש (עד 24 חודשים)
+    const slice = arr.slice(Math.max(0, arr.length - n));
+    return { start: slice[0].price, end: slice[slice.length-1].price };
+  }
+
+  function colorForRatio(t){
+    // t=0 -> accent (זול), t=1 -> warn (יקר), עם מעבר צהבהב באמצע
+    const stops = [
+      {t:0, c:[14,124,102]},
+      {t:0.5, c:[213,178,90]},
+      {t:1, c:[179,57,81]},
+    ];
+    let a = stops[0], b = stops[1];
+    if(t > 0.5){ a = stops[1]; b = stops[2]; }
+    const localT = a.t === b.t ? 0 : (t - a.t)/(b.t - a.t);
+    const c = a.c.map((v,i) => Math.round(v + (b.c[i]-v)*localT));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+  }
+
+  // ---- רינדור טבלה ----
+  function renderTable(){
+    const prods = filteredProducts();
+    const acts = activeChains();
+    const headRow = document.getElementById('tableHeadRow');
+    headRow.innerHTML = '<th>מוצר</th>' + acts.map(c => `<th><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-left:4px;"></span>${c.name_he}</th>`).join('');
+
+    const body = document.getElementById('tableBody');
+    if(prods.length === 0){
+      body.innerHTML = `<tr><td colspan="${acts.length+1}"><div class="empty-state">לא נמצאו מוצרים התואמים את הסינון. נסו לרוקן חלק מהפילטרים.</div></td></tr>`;
+      updateTitles(prods, acts);
+      return;
+    }
+
+    body.innerHTML = prods.map(p => {
+      const rowPrices = acts.map(c => currentAvgMap[c.id+'|'+p.barcode]);
+      const validPrices = rowPrices.filter(Boolean).map(r => r.avg_price);
+      const min = Math.min(...validPrices), max = Math.max(...validPrices);
+      const cells = acts.map((c, i) => {
+        const rec = rowPrices[i];
+        if(!rec) return '<td><span class="no-data">אין נתון</span></td>';
+        const t = max === min ? 0 : (rec.avg_price - min) / (max - min);
+        const bg = colorForRatio(t);
+        const trend = trendForPeriod(c.id, p.barcode, state.period);
+        let arrow = '', arrowClass = 'arrow-flat';
+        if(trend){
+          const pctChange = (trend.end - trend.start) / trend.start;
+          if(pctChange > 0.005){ arrow = '▲'; arrowClass = 'arrow-up'; }
+          else if(pctChange < -0.005){ arrow = '▼'; arrowClass = 'arrow-down'; }
+          else { arrow = '–'; arrowClass = 'arrow-flat'; }
+        }
+        return `<td>
+          <span class="price-cell" style="background:${bg}22;color:${bg};">
+            ₪${rec.avg_price.toFixed(2)}
+            <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>
+          </span>
+          ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
+        </td>`;
+      }).join('');
+      return `<tr>
+        <td>
+          <div class="prod-name">${p.name}</div>
+          <div class="prod-meta">${p.category} · ${p.manufacturer}</div>
+        </td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    updateTitles(prods, acts);
+  }
+
+  function updateTitles(prods, acts){
+    document.getElementById('tableSubtitle').textContent = `${prods.length} מוצרים · ${acts.length} רשתות`;
+  }
+
+  // ---- רינדור גרפים ----
+  let trendChartInst = null, barChartInst = null;
+
+  const periodLabel = { week: 'שבועי (12 שבועות אחרונים)', month: 'חודשי (12 חודשים אחרונים)', quarter: 'רבעוני (8 רבעונים אחרונים)', year: 'שנתי (חלונות של 12 חודשים)' };
+
+  function buildTrendSeries(chainId, barcodes, period){
+    // ממוצע המוצרים המסוננים, לרשת נתונה, לאורך ציר הזמן שנבחר
+    if(period === 'week'){
+      const weeks = Array.from(new Set(recent_weekly.map(r=>r.week))).sort((a,b)=>a-b);
+      return weeks.map(w => {
+        const vals = barcodes.map(bc => (weeklyMap[chainId+'|'+bc]||[]).find(r=>r.week===w)?.price).filter(v=>v!=null);
+        return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+      }).map((v,i)=>({label:'ש'+(i+1), value:v}));
+    }
+    // בסיס חודשי
+    const allMonths = Array.from(new Set(monthly_history.map(r=>r.month))).sort();
+    if(period === 'month'){
+      const months = allMonths.slice(-12);
+      return months.map(m => {
+        const vals = barcodes.map(bc => (monthlyMap[chainId+'|'+bc]||[]).find(r=>r.month===m)?.price).filter(v=>v!=null);
+        return { label: m.slice(2), value: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null };
+      });
+    }
+    if(period === 'quarter'){
+      // קיבוץ ל-8 רבעונים אחרונים
+      const quarters = {};
+      allMonths.forEach(m => {
+        const [y, mo] = m.split('-').map(Number);
+        const q = `${y}-Q${Math.ceil(mo/3)}`;
+        (quarters[q] = quarters[q] || []).push(m);
+      });
+      const qKeys = Object.keys(quarters).sort().slice(-8);
+      return qKeys.map(q => {
+        const months = quarters[q];
+        const vals = [];
+        barcodes.forEach(bc => months.forEach(m => {
+          const v = (monthlyMap[chainId+'|'+bc]||[]).find(r=>r.month===m)?.price;
+          if(v!=null) vals.push(v);
+        }));
+        return { label: q, value: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null };
+      });
+    }
+    // year -> חלונות נגררים (rolling) של 12 חודשים אחורה מהחודש הנוכחי,
+    // ולא שנים קלנדריות - כי שנה קלנדרית עלולה להיות חלקית (למשל 7 חודשים בלבד)
+    // ולתת השוואה מוטה. כך כל "שנה" מייצגת בדיוק 12 חודשים מלאים ושווים.
+    const chunks = [];
+    for(let end = allMonths.length; end > 0; end -= 12){
+      const start = Math.max(0, end - 12);
+      chunks.unshift(allMonths.slice(start, end));
+    }
+    return chunks.map((monthsChunk, idx) => {
+      const vals = [];
+      barcodes.forEach(bc => monthsChunk.forEach(m => {
+        const v = (monthlyMap[chainId+'|'+bc]||[]).find(r=>r.month===m)?.price;
+        if(v!=null) vals.push(v);
+      }));
+      const fromAgo = chunks.length - idx; // כמה "שנים" אחורה מייצג המקטע הזה
+      const label = fromAgo === 1 ? '12 החודשים האחרונים' : `לפני כ-${fromAgo} שנים`;
+      return { label, value: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null };
+    });
+  }
+
+  function renderCharts(){
+    const prods = filteredProducts();
+    const acts = activeChains();
+    const barcodes = prods.map(p => p.barcode);
+    document.getElementById('trendSubtitle').textContent = (monthly_history.length === 0 && recent_weekly.length === 0)
+      ? 'אין עדיין מספיק היסטוריית מחירים - תתחיל להצטבר מהריצה היומית הבאה'
+      : `ממוצע ${prods.length} מוצרים מסוננים · ${periodLabel[state.period]}`;
+
+    // --- Trend line chart ---
+    const seriesByChain = acts.map(c => ({ chain: c, series: buildTrendSeries(c.id, barcodes, state.period) }));
+    const labels = seriesByChain[0] ? seriesByChain[0].series.map(s => s.label) : [];
+
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    if(trendChartInst) trendChartInst.destroy();
+    trendChartInst = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: seriesByChain.map(({chain, series}) => ({
+          label: chain.name_he,
+          data: series.map(s => s.value),
+          borderColor: chain.color,
+          backgroundColor: chain.color,
+          tension: 0.3,
+          pointRadius: 2,
+          borderWidth: 2,
+          spanGaps: true,
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { callback: v => '₪'+v } },
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
+        }
+      }
+    });
+
+    // --- Bar chart: current avg price by chain ---
+    const barValues = acts.map(c => {
+      const vals = barcodes.map(bc => currentAvgMap[c.id+'|'+bc]?.avg_price).filter(v=>v!=null);
+      return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    });
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    if(barChartInst) barChartInst.destroy();
+    barChartInst = new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: acts.map(c => c.name_he),
+        datasets: [{ data: barValues, backgroundColor: acts.map(c => c.color), borderRadius: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: v => '₪'+v } } }
+      }
+    });
+  }
+
+  function render(){
+    refreshManufacturerOptions();
+    renderTable();
+    renderCharts();
+  }
+
+  // ---- מודל מבצע ----
+  const promoModal = document.getElementById('promoModal');
+  document.getElementById('tableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.promo-badge');
+    if(!btn) return;
+    const chainId = btn.dataset.chain, barcode = btn.dataset.barcode;
+    const rec = currentAvgMap[chainId+'|'+barcode];
+    const chain = chainById[chainId];
+    const product = productByBarcode[barcode];
+    if(!rec || !rec.promo) return;
+    openPromoModal(chain, product, rec);
+  });
+  document.getElementById('closeModalBtn').addEventListener('click', () => promoModal.classList.add('hidden'));
+  promoModal.addEventListener('click', (e) => { if(e.target === promoModal) promoModal.classList.add('hidden'); });
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape') return;
+    if(!promoModal.classList.contains('hidden')) promoModal.classList.add('hidden');
+    document.getElementById('basketSuggestions').classList.add('hidden');
+  });
+
+  function formatDate(iso){
+    const [y,m,d] = iso.split('-');
+    return `${parseInt(d)}.${parseInt(m)}.${y}`;
+  }
+
+  function openPromoModal(chain, product, rec){
+    const promo = rec.promo;
+    const regularTotal = rec.avg_price * promo.qty;
+    const savings = regularTotal - promo.deal_total;
+    const savingsPct = Math.round((savings / regularTotal) * 100);
+    document.getElementById('modalTitle').textContent = product.name;
+    document.getElementById('modalChain').textContent = `מבצע ב${chain.name_he}`;
+    document.getElementById('modalBody').innerHTML = `
+      <div class="modal-row"><span class="lbl">מחיר רגיל ליחידה</span><span>₪${rec.avg_price.toFixed(2)}</span></div>
+      <div class="modal-row"><span class="lbl">המבצע</span><span>${promo.label}</span></div>
+      <div class="modal-row"><span class="lbl">כמות בעסקה</span><span>${promo.qty} יחידות</span></div>
+      <div class="modal-row"><span class="lbl">מחיר רגיל ל-${promo.qty} יחידות</span><span>₪${regularTotal.toFixed(2)}</span></div>
+      <div class="modal-row"><span class="lbl">מחיר במבצע</span><span>₪${promo.deal_total.toFixed(2)}</span></div>
+      <div class="modal-row"><span class="lbl">תחילת המבצע</span><span>${formatDate(promo.start_date)}</span></div>
+      <div class="modal-row"><span class="lbl">סוף המבצע</span><span>${formatDate(promo.end_date)}</span></div>
+      <div class="modal-save">חוסכים ₪${savings.toFixed(2)} (כ-${savingsPct}%) לעומת מחיר רגיל</div>
+    `;
+    promoModal.classList.remove('hidden');
+  }
+
+
+  // ---- סל קניות אישי ----
+  const basketSearchInput = document.getElementById('basketSearchInput');
+  const basketSuggestions = document.getElementById('basketSuggestions');
+  let basketSelectedBarcode = null;
+  let highlightedIdx = -1;
+
+  function searchProducts(q){
+    q = q.trim();
+    if(!q) return [];
+    return products.filter(p => p.name.includes(q) || p.manufacturer.includes(q) || p.category.includes(q)).slice(0, 12);
+  }
+
+  function renderSuggestions(list){
+    highlightedIdx = -1;
+    if(list.length === 0){
+      basketSuggestions.innerHTML = '<div class="suggestion-empty">לא נמצאו מוצרים תואמים</div>';
+    } else {
+      basketSuggestions.innerHTML = list.map(p =>
+        `<div class="suggestion-item" data-barcode="${p.barcode}"><span>${p.name}</span><span class="s-cat">${p.category}</span></div>`
+      ).join('');
+    }
+    basketSuggestions.classList.remove('hidden');
+  }
+
+  basketSearchInput.addEventListener('input', () => {
+    basketSelectedBarcode = null;
+    const results = searchProducts(basketSearchInput.value);
+    if(basketSearchInput.value.trim()) renderSuggestions(results);
+    else basketSuggestions.classList.add('hidden');
+  });
+
+  basketSearchInput.addEventListener('focus', () => {
+    if(basketSearchInput.value.trim()) renderSuggestions(searchProducts(basketSearchInput.value));
+  });
+
+  basketSearchInput.addEventListener('keydown', (e) => {
+    const items = Array.from(basketSuggestions.querySelectorAll('.suggestion-item'));
+    if(items.length === 0) return;
+    if(e.key === 'ArrowDown'){ e.preventDefault(); highlightedIdx = Math.min(items.length-1, highlightedIdx+1); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); highlightedIdx = Math.max(0, highlightedIdx-1); }
+    else if(e.key === 'Enter'){ e.preventDefault(); if(highlightedIdx>=0) items[highlightedIdx].click(); return; }
+    else return;
+    items.forEach((it,i) => it.classList.toggle('highlighted', i===highlightedIdx));
+  });
+
+  basketSuggestions.addEventListener('click', (e) => {
+    const item = e.target.closest('.suggestion-item[data-barcode]');
+    if(!item) return;
+    const p = productByBarcode[item.dataset.barcode];
+    basketSelectedBarcode = p.barcode;
+    basketSearchInput.value = p.name;
+    basketSuggestions.classList.add('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.autocomplete-wrap')) basketSuggestions.classList.add('hidden');
+  });
+
+  const basket = []; // [{barcode, qty}]
+
+  document.getElementById('basketAddBtn').addEventListener('click', () => {
+    let barcode = basketSelectedBarcode;
+    if(!barcode){
+      // אם המשתמש הקליד אבל לא בחר מהרשימה - ניקח את ההתאמה הראשונה
+      const results = searchProducts(basketSearchInput.value);
+      if(results.length === 0) return;
+      barcode = results[0].barcode;
+    }
+    const qty = Math.max(1, parseInt(document.getElementById('basketQtyInput').value) || 1);
+    const existing = basket.find(b => b.barcode === barcode);
+    if(existing) existing.qty += qty; else basket.push({ barcode, qty });
+    basketSearchInput.value = '';
+    basketSelectedBarcode = null;
+    basketSuggestions.classList.add('hidden');
+    renderBasket();
+  });
+  document.getElementById('basketClearBtn').addEventListener('click', () => { basket.length = 0; renderBasket(); });
+  document.getElementById('basketItemsList').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-remove]');
+    if(!btn) return;
+    const idx = basket.findIndex(b => b.barcode === btn.dataset.remove);
+    if(idx > -1) basket.splice(idx, 1);
+    renderBasket();
+  });
+
+  function renderBasket(){
+    const listEl = document.getElementById('basketItemsList');
+    if(basket.length === 0){
+      listEl.innerHTML = '<span class="no-data">הסל ריק - הוסיפו מוצרים מהתפריט למעלה</span>';
+    } else {
+      listEl.innerHTML = basket.map(b => {
+        const p = productByBarcode[b.barcode];
+        return `<div class="basket-item-chip">${p.name} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${p.name} מהסל">✕</button></div>`;
+      }).join('');
+    }
+
+    const headRow = document.getElementById('basketHeadRow');
+    headRow.innerHTML = '<th>מוצר</th>' + chains.map(c => `<th>${c.name_he}</th>`).join('');
+
+    const body = document.getElementById('basketBody');
+    if(basket.length === 0){
+      body.innerHTML = '';
+      document.getElementById('basketFoot').innerHTML = '';
+      return;
+    }
+
+    body.innerHTML = basket.map(b => {
+      const p = productByBarcode[b.barcode];
+      const rowVals = chains.map(c => {
+        const rec = currentAvgMap[c.id+'|'+b.barcode];
+        return rec ? rec.avg_price * b.qty : null;
+      });
+      const valid = rowVals.filter(v => v != null);
+      const min = Math.min(...valid), max = Math.max(...valid);
+      const cells = chains.map((c, i) => {
+        const v = rowVals[i];
+        if(v == null) return '<td><span class="no-data">לא נמכר</span></td>';
+        const t = max === min ? 0 : (v - min) / (max - min);
+        const bg = colorForRatio(t);
+        return `<td><span class="price-cell" style="background:${bg}22;color:${bg};">₪${v.toFixed(2)}</span></td>`;
+      }).join('');
+      return `<tr><td><div class="prod-name">${p.name}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
+    }).join('');
+
+    // שורת סה"כ
+    const totals = chains.map(c => {
+      let sum = 0, missing = 0;
+      basket.forEach(b => {
+        const rec = currentAvgMap[c.id+'|'+b.barcode];
+        if(rec) sum += rec.avg_price * b.qty; else missing++;
+      });
+      return { chain: c, sum, missing };
+    });
+    const complete = totals.filter(t => t.missing === 0);
+    const pool = complete.length ? complete : totals;
+    const minSum = Math.min(...pool.map(t => t.sum));
+    const maxSum = Math.max(...pool.map(t => t.sum));
+
+    document.getElementById('basketFoot').innerHTML = `<tr class="basket-total-row">
+      <td>סה"כ לסל</td>
+      ${totals.map(t => {
+        let cls = '';
+        if(t.missing === 0 && t.sum === minSum) cls = 'best-total';
+        else if(t.missing === 0 && t.sum === maxSum) cls = 'worst-total';
+        return `<td class="${cls}">
+          ₪${t.sum.toFixed(2)}
+          ${t.missing ? `<span class="missing-note">${t.missing} מוצרים לא במלאי</span>` : ''}
+        </td>`;
+      }).join('')}
+    </tr>`;
+  }
+
+  renderBasket();
+  render();
+
+  // ---- מפת סניפים ----
+  const { stores } = DATA;
+  const mapActiveChains = new Set(chains.map(c => c.id));
+  const mapChipsEl = document.getElementById('mapChainChips');
+  const chainLayers = {}; // chain_id -> L.layerGroup
+
+  const branchMap = L.map('branchMap', { scrollWheelZoom: false }).setView([31.6, 34.98], 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(branchMap);
+
+  chains.forEach(c => {
+    const layer = L.layerGroup();
+    stores.filter(s => s.chain_id === c.id && s.lat != null && s.lng != null).forEach(s => {
+      const marker = L.circleMarker([s.lat, s.lng], {
+        radius: 8, color: '#fff', weight: 2, fillColor: c.color, fillOpacity: 0.95
+      });
+      marker.bindPopup(`
+        <div class="store-popup">
+          <h4>${c.name_he} - ${s.city_name || ''}</h4>
+          <div class="sp-addr">${s.address}</div>
+        </div>
+      `);
+      marker.addTo(layer);
+    });
+    chainLayers[c.id] = layer;
+    layer.addTo(branchMap);
+
+    const chip = document.createElement('div');
+    chip.className = 'chip active';
+    chip.style.background = c.color;
+    chip.style.borderColor = c.color;
+    chip.addEventListener('click', () => {
+      if(mapActiveChains.has(c.id)){
+        if(mapActiveChains.size === 1) return;
+        mapActiveChains.delete(c.id);
+        branchMap.removeLayer(chainLayers[c.id]);
+        chip.classList.remove('active'); chip.style.background=''; chip.style.borderColor='';
+      } else {
+        mapActiveChains.add(c.id);
+        chainLayers[c.id].addTo(branchMap);
+        chip.classList.add('active'); chip.style.background=c.color; chip.style.borderColor=c.color;
+      }
+    });
+    chip.textContent = `${c.name_he} (${stores.filter(s=>s.chain_id===c.id).length})`;
+    mapChipsEl.appendChild(chip);
+  });
+
+  document.getElementById('mapLegend').innerHTML = chains.map(c =>
+    `<span><span class="dot" style="background:${c.color};"></span>${c.name_he}</span>`
+  ).join('');
+})();
+</script>
+</body>
+</html>
