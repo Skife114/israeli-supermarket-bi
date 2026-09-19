@@ -383,6 +383,9 @@ def parse_promo_date(val):
 
 
 def parse_promo_number(val):
+    """ממיר למספר. שדות מספריים בקובצי המבצע משתמשים ב-'NO_BODY' כערך-ריק
+    מוסכם (במקום תא ריק) - float('NO_BODY') זורק ValueError ותופס כאן כמו כל
+    ערך לא-תקין אחר, אז אין צורך בטיפול מיוחד."""
     try:
         n = float(val)
         return None if n != n else n  # n != n <=> NaN
@@ -390,20 +393,46 @@ def parse_promo_number(val):
         return None
 
 
-def extract_item_codes(row):
-    """מחזיר את רשימת הברקודים שהמבצע חל עליהם. ברוב המקרים תהיה עמודת
-    itemcode ישירה (אם הספרייה כבר "פרסה" את הרשימה המקוננת PromotionItems
-    לשורה-per-item, באותו אופן שהיא פורסת את רשימת ה-Promotions עצמה).
-    כגיבוי, אם אין עמודה כזו אבל יש עמודת promotionitems גולמית (רשימה/מחרוזת
-    לא-פרוסה), מנסים לחלץ ItemCode ממנה עם regex. אם שניהם נכשלים - רשימה
-    ריקה, והשורה מדולגת (לא מפילים את כל הריצה על שורת מבצע אחת בעייתית)."""
-    val = row.get("itemcode")
-    if not pd.isna(val) and str(val).strip():
-        return [str(val).strip()]
-    raw = row.get("promotionitems")
-    if pd.isna(raw) or not str(raw).strip():
+def is_placeholder(val):
+    """שדות טקסט בקובצי המבצע משתמשים ב-'' (שני גרשיים, מחרוזת תו-תו ולא
+    תא ריק) או 'NO_BODY' כערכי-ריק מוסכמים, בנוסף ל-NaN/ריק רגיל."""
+    if pd.isna(val):
+        return True
+    return str(val).strip() in ("", "''", "NO_BODY")
+
+
+def parse_promo_groups(raw_json):
+    """מפענח את עמודת ה-groups (JSON) ומחזיר רשימת (item_dict, min_purchase_amount) -
+    אחד לכל פריט אמיתי בתוך כל הקבוצות של המבצע. גם group וגם promotionitem
+    יכולים להיות dict בודד או list, תלוי כמה קבוצות/פריטים יש במבצע - מנרמלים
+    את שניהם לרשימה. JSON לא-תקין/ריק -> רשימה ריקה (מדלגים על השורה, לא
+    מפילים את כל הריצה)."""
+    if is_placeholder(raw_json):
         return []
-    return re.findall(r"itemcode['\"]?\s*[:=]\s*['\"]?(\d{6,14})", str(raw), re.IGNORECASE)
+    try:
+        parsed = json.loads(raw_json)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return []
+    groups = parsed.get("group") if isinstance(parsed, dict) else None
+    if groups is None:
+        return []
+    if isinstance(groups, dict):
+        groups = [groups]
+    results = []
+    for g in groups:
+        if not isinstance(g, dict):
+            continue
+        items = g.get("promotionitems", {})
+        items = items.get("promotionitem") if isinstance(items, dict) else None
+        if items is None:
+            continue
+        if isinstance(items, dict):
+            items = [items]
+        min_purchase = g.get("minpurchaseamount")
+        for it in items:
+            if isinstance(it, dict):
+                results.append((it, min_purchase))
+    return results
 
 
 promo_by_key = {}  # (chain_id, barcode) -> {label, qty, deal_total, start_date, end_date}
@@ -422,52 +451,88 @@ for friendly_id, fname in PROMO_FILES.items():
 
     n_kept = n_club = n_expired = n_bad = 0
     for _, row in promo_df.iterrows():
-        item_codes = extract_item_codes(row)
-        if not item_codes:
-            n_bad += 1
-            continue
-
-        clubs = row.get("clubs")
-        if not pd.isna(clubs) and str(clubs).strip() not in ("", "0"):
+        # קופון (additionaliscoupon) דורש פעולת מימוש נפרדת (קליפה/הצגת קוד) -
+        # לא מחיר שרואים סתם בכניסה לחנות, אז לא מציגים אותו כ"מחיר מבצע" רגיל.
+        if not is_placeholder(row.get("additionaliscoupon")) and str(row.get("additionaliscoupon")).strip() != "0":
             n_club += 1
             continue
 
-        end_date = parse_promo_date(row.get("promotionenddate"))
+        # clubid: שדה שמזהה הגבלת-מועדון, אבל "פתוח לכולם" מיוצג בפועל כ"0"
+        # או "0 - כלל הלקוחות" (נצפה בדאטה אמיתי משופרסל) - לא כתא ריק. רק
+        # clubid שלא ריק וגם לא מתחיל ב-"0" נחשב מבצע מועדון אמיתי ומסונן.
+        clubid = row.get("clubid")
+        if not is_placeholder(clubid) and not str(clubid).strip().startswith("0"):
+            n_club += 1
+            continue
+
+        end_date = parse_promo_date(row.get("promotionenddatetime"))
         if end_date is None or end_date < today_str:
             n_expired += 1
             continue
-        start_date = parse_promo_date(row.get("promotionstartdate")) or end_date
+        start_date = parse_promo_date(row.get("promotionstartdatetime")) or end_date
 
-        deal_total = parse_promo_number(row.get("discountedprice"))
-        if deal_total is None or deal_total <= 0:
+        label_base = clean_str(row.get("promotiondescription")) or "מבצע"
+
+        items = parse_promo_groups(row.get("groups"))
+        if not items:
             n_bad += 1
             continue
 
-        qty = parse_promo_number(row.get("minqty")) or parse_promo_number(row.get("minnoofitemofered")) or 1
-        qty = int(qty) if qty >= 1 else 1
+        row_kept = False
+        for item, min_purchase in items:
+            barcode = str(item.get("itemcode", "")).strip()
+            # ברקוד חסר, או קוד-placeholder של כל-אפסים (נצפה בדאטה אמיתי -
+            # מייצג הנחת-כל-הסל, לא פריט ספציפי) - לא ניתן לשייך למוצר אמיתי.
+            if not barcode or not barcode.strip("0"):
+                continue
 
-        label = clean_str(row.get("promotiondescription")) or "מבצע"
-        promo_record = {
-            "label": label, "qty": qty, "deal_total": round(deal_total, 2),
-            "start_date": start_date, "end_date": end_date,
-        }
+            deal_total = parse_promo_number(item.get("discountedprice"))
+            if deal_total is None or deal_total <= 0:
+                continue
 
-        for barcode in item_codes:
+            # פריטים שקולים (bisweighted) או עם minqty לא-תקין/שברי (למשל
+            # 0.010 = "כל כמות") לא מייצגים עסקת "N ביחד" - מחיר-יחידה מוזל
+            # רגיל (qty=1, בדיוק כמו שה-modal כבר יודע להציג "לפני/אחרי").
+            is_weighted = str(item.get("bisweighted", "")).strip() == "1"
+            raw_minqty = parse_promo_number(item.get("minqty"))
+            qty = int(raw_minqty) if (raw_minqty and raw_minqty >= 1 and not is_weighted) else 1
+
+            label = label_base
+            min_amt = parse_promo_number(min_purchase)
+            if min_amt and min_amt > 0:
+                label = f"{label_base} (בקנייה מעל ₪{min_amt:.0f})"
+
             key = (friendly_id, barcode)
+            promo_record = {
+                "label": label, "qty": qty, "deal_total": round(deal_total, 2),
+                "start_date": start_date, "end_date": end_date,
+            }
             existing = promo_by_key.get(key)
             if existing is None or end_date < existing["end_date"]:
                 promo_by_key[key] = promo_record
-        n_kept += 1
+            row_kept = True
 
-    print(f"  נשמרו: {n_kept} | מועדון בלבד (סוננו): {n_club} | פג תוקף (סוננו): {n_expired} | לא תקין (סוננו): {n_bad}")
+        if row_kept:
+            n_kept += 1
+        else:
+            n_bad += 1
+
+    print(f"  נשמרו: {n_kept} | מועדון/קופון (סוננו): {n_club} | פג תוקף (סוננו): {n_expired} | לא תקין (סוננו): {n_bad}")
 
 print(f"\nסה\"כ מבצעים ייחודיים (אחרי דה-דופ' לפי רשת+ברקוד): {len(promo_by_key)}")
 
 if has_price_data:
     if promo_by_key:
-        current_avg["promo"] = current_avg.apply(
-            lambda r: promo_by_key.get((r["chain_id"], r["barcode"])), axis=1
-        )
+        def attach_promo(r):
+            rec = promo_by_key.get((r["chain_id"], r["barcode"]))
+            # תקינות סופית: מציגים "מבצע" רק אם המחיר בו נמוך ממש מהמחיר
+            # הרגיל הממוצע שחישבנו - שומר מפני נתוני מבצע פגומים/לא-עדכניים
+            # שהיו הופכים ל"הנחה" מזויפת (מחיר זהה או גבוה יותר).
+            if rec is None or rec["deal_total"] >= r["avg_price"]:
+                return None
+            return rec
+
+        current_avg["promo"] = current_avg.apply(attach_promo, axis=1)
         n_with_promo = int(current_avg["promo"].notna().sum())
         print(f"מוצרים עם מבצע פעיל בטבלת current_avg: {n_with_promo} מתוך {len(current_avg)}")
     current_avg.to_json("current_avg_transformed.json", orient="records", force_ascii=False)
