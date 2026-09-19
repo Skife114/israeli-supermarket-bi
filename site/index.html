@@ -538,8 +538,11 @@ async function loadDashboardData(){
     return { start: slice[0].price, end: slice[slice.length-1].price };
   }
 
-  function colorForRatio(t){
-    // t=0 -> accent (זול), t=1 -> warn (יקר), עם מעבר צהבהב באמצע
+  function colorForRatio(t, alpha){
+    // t=0 -> accent (זול), t=1 -> warn (יקר), עם מעבר צהבהב באמצע.
+    // מחזיר rgba() מוכן לשימוש כרקע - כדי לא לחזור על הבאג של הדבקת
+    // סיומת hex-אלפא (כמו `${bg}22`) על ערך rgb(...) שכבר לא-hex,
+    // מה שיוצר CSS לא-תקין שהדפדפן פשוט מתעלם ממנו (רקע נשאר שקוף).
     const stops = [
       {t:0, c:[14,124,102]},
       {t:0.5, c:[213,178,90]},
@@ -549,7 +552,7 @@ async function loadDashboardData(){
     if(t > 0.5){ a = stops[1]; b = stops[2]; }
     const localT = a.t === b.t ? 0 : (t - a.t)/(b.t - a.t);
     const c = a.c.map((v,i) => Math.round(v + (b.c[i]-v)*localT));
-    return `rgb(${c[0]},${c[1]},${c[2]})`;
+    return `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
   }
 
   // ---- רינדור טבלה ----
@@ -598,7 +601,7 @@ async function loadDashboardData(){
         const rec = rowPrices[i];
         if(!rec) return '<td><span class="no-data">אין נתון</span></td>';
         const t = max === min ? 0 : (rec.avg_price - min) / (max - min);
-        const bg = colorForRatio(t);
+        const bg = colorForRatio(t, 0.55);
         const trend = trendForPeriod(c.id, p.barcode, state.period);
         let arrow = '', arrowClass = 'arrow-flat';
         if(trend){
@@ -611,8 +614,8 @@ async function loadDashboardData(){
             <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>`;
         const urlBuilder = CHAIN_PRODUCT_URL[c.id];
         const priceEl = urlBuilder
-          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}8c;color:var(--ink);">${priceInner}</a>`
-          : `<span class="price-cell" style="background:${bg}8c;color:var(--ink);">${priceInner}</span>`;
+          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg};color:var(--ink);">${priceInner}</a>`
+          : `<span class="price-cell" style="background:${bg};color:var(--ink);">${priceInner}</span>`;
         return `<td>
           ${priceEl}
           ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
@@ -951,8 +954,8 @@ async function loadDashboardData(){
         const v = rowVals[i];
         if(v == null) return '<td><span class="no-data">לא נמכר</span></td>';
         const t = max === min ? 0 : (v - min) / (max - min);
-        const bg = colorForRatio(t);
-        return `<td><span class="price-cell" style="background:${bg}8c;color:var(--ink);">₪${v.toFixed(2)}</span></td>`;
+        const bg = colorForRatio(t, 0.55);
+        return `<td><span class="price-cell" style="background:${bg};color:var(--ink);">₪${v.toFixed(2)}</span></td>`;
       }).join('');
       return `<tr><td><div class="prod-name">${p.name || ('מוצר ' + b.barcode)}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
     }).join('');
