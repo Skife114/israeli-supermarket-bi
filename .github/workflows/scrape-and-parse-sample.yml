@@ -47,13 +47,20 @@ jobs:
         #   את האתר החי בכל ריצה יומית מוצלחת)
         # משתמשים ב-git add לפני הבדיקה כדי שזה יעבוד גם בפעם הראשונה שקובץ
         # נוצר (קובץ חדש שעדיין לא במעקב git, לא רק שינוי בקובץ קיים).
+        # חשוב: בלי [skip ci] בהודעת ה-commit! GitHub Actions ממילא לא יופעל
+        # מחדש מזה - ה-paths filter למעלה מגביל הפעלה רק לשינוי בסקריפטים/
+        # requirements.txt/הקובץ הזה, לא ל-data/**. אבל [skip ci] הוא מוסכמה
+        # שגם Netlify מזהה (בנפרד, כ"דלג גם על הבנייה שלי") - וזה בדיוק מה
+        # שקרה בפועל: כל commit יומי כזה עם [skip ci] גרם ל-Netlify לדלג על
+        # הדיפלוי, כך שהאתר החי מעולם לא התעדכן מריצה יומית - רק כשקוד אמיתי
+        # (בלי התג) נדחף. גילוי אמיתי ב-2026-09-19, לא הנחה תיאורטית.
         if: github.ref == 'refs/heads/main'
         run: |
           git add data/city_code_fallback.json data/geocode_cache.json site/data/*.json
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: refresh fallback/cache/dashboard data [skip ci]"
+            git commit -m "chore: refresh fallback/cache/dashboard data"
             # מישהו יכול לדחוף ל-main בזמן שהריצה הזו (שאורכת כ-20 דקות) עדיין
             # רצה - אז main המרוחק עלול להתקדם לפני שמגיעים לכאן. כל הקבצים
             # שאנחנו מקומטים כאן (caches + site/data/*.json) הם תוצר-הרצה מלא
