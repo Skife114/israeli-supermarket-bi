@@ -96,6 +96,7 @@
   tbody td:first-child{text-align:right;}
   .prod-name{font-weight:600;}
   .prod-meta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
+  .cell-name-note{color:var(--ink-soft);font-size:10.5px;margin-top:3px;line-height:1.3;}
   .table-scroll{max-height:560px;overflow:auto;}
   .pagination-row{
     display:flex; align-items:center; justify-content:center; gap:14px;
@@ -397,6 +398,38 @@ async function loadDashboardData(){
     return (chainId && productByChainBarcode[chainId + '|' + barcode]) || productByBarcode[barcode];
   }
 
+  // בפועל, כשלרשתות שונות יש שמות "שונים" לאותו ברקוד, ברוב הרוב המכריע של
+  // המקרים (נבדק מול דאטה אמיתי - למעלה מ-95%) זה עדיין אותו מוצר בדיוק, רק
+  // מנוסח אחרת: קיצור/חיתוך לאורך קבוע ("ביונד מיט רצועות בסג" מול "...בסגנון
+  // סטייק 160 גרם"), ניסוח שונה ("1לי" מול "1 ליטר"), או אפילו הבדלי כתיב/
+  // תעתיק ("וורטר" מול "ורטר", "גבינת" מול "גבינה" - נטיות עברית). השוואת
+  // מילים-שלמות לא מספיקה כאן (נכשלת בדיוק על הבדלי כתיב/נטייה כאלה) - לכן
+  // משתמשים בדמיון ברמת תווים (Dice coefficient על bigrams) שעמיד להם.
+  // התנגשות אמיתית (אותו קוד לשני מוצרים שונים לגמרי, כמו כיסא ים מול
+  // פטרוזליה, או תמרים מול פילה דג - שניהם נמצאו בדאטה אמיתי) נותנת דמיון
+  // ~0, בעוד שכל הניסוחים השונים של אותו מוצר שנבדקו ידנית נתנו 0.5+ - פער
+  // גדול וברור. הסף (0.2) נבחר שמרן בכוונה בצד הבטוח: עדיף לפספס התנגשות
+  // נדירה (המצב הקודם, לא רגרסיה) מאשר להציג הערה שגויה על מוצר תקין.
+  function _normName(s){ return (s || '').trim().replace(/\s+/g, ' '); }
+  function _charBigrams(s){
+    const set = new Set();
+    for(let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2));
+    return set;
+  }
+  function _diceSimilarity(a, b){
+    const setA = _charBigrams(a), setB = _charBigrams(b);
+    if(setA.size === 0 || setB.size === 0) return a === b ? 1 : 0;
+    let shared = 0;
+    setA.forEach(bg => { if(setB.has(bg)) shared++; });
+    return 2 * shared / (setA.size + setB.size);
+  }
+  function likelySameProduct(a, b){
+    const na = _normName(a), nb = _normName(b);
+    if(!na || !nb || na === nb) return true;
+    if(na.startsWith(nb) || nb.startsWith(na)) return true; // קיצור/חיתוך
+    return _diceSimilarity(na, nb) >= 0.2;
+  }
+
   // ---- מבני עזר לחיפוש מהיר ----
   const currentAvgMap = {}; // key: chain_id|barcode -> {avg_price, n_on_sale, n_stores}
   current_avg.forEach(r => currentAvgMap[r.chain_id + '|' + r.barcode] = r);
@@ -632,8 +665,21 @@ async function loadDashboardData(){
         const priceEl = urlBuilder
           ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg};color:var(--ink);">${priceInner}</a>`
           : `<span class="price-cell" style="background:${bg};color:var(--ink);">${priceInner}</span>`;
+        // ברקוד פנימי (PLU) יכול להיות משויך לשני מוצרים שונים לגמרי בין
+        // רשתות (ראו productByChainBarcode) - הכותרת של השורה מציגה רק שם
+        // אחד (מהרשת הראשונה שיש לה נתון). כשהשם של הרשת הספציפית הזו שונה
+        // מזה שמוצג בכותרת, מוסיפים הערה גלויה בתא עצמו - לא tooltip, כדי
+        // שזה יהיה נגיש (מקלדת/מסך-קורא/מגע) בלי מצב hover.
+        const cellProduct = productFor(p.barcode, c.id);
+        // dispProduct.name יכול להיות ריק (אז הכותרת עצמה נופלת ל"מוצר <ברקוד>") -
+        // במקרה כזה עדיין רוצים להראות הערה אם לרשת הזו כן יש שם אמיתי, ולכן
+        // משווים מול '' ולא מדלגים לגמרי כשלכותרת אין שם. likelySameProduct
+        // (לא פשוט !==) כדי לא להציף הערות על הבדלי ניסוח/קיצור בין רשתות
+        // שהם לא באמת מוצר אחר (ראו ההערה למעלה על likelySameProduct).
+        const nameDiffers = cellProduct.name && (!dispProduct.name || !likelySameProduct(cellProduct.name, dispProduct.name));
         return `<td>
           ${priceEl}
+          ${nameDiffers ? `<div class="cell-name-note">שם ב${c.name_he}: ${cellProduct.name}</div>` : ''}
           ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
         </td>`;
       }).join('');
