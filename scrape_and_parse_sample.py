@@ -55,13 +55,26 @@ print("ממתין לסיום הורדת קובצי המחירים המלאים..
 price_scraper.join()
 print("ההורדה הסתיימה.\n")
 
+# אותה סיבה כמו ההפרדה מקובצי הסניפים למעלה - limit נפרד לקובצי המבצעים
+# כדי שהם לא "יתחרו" על אותו מכסה עם קובצי המחירים.
+promo_scraper = ScarpingTask(
+    enabled_scrapers=WORKING_CHAINS,
+    files_types=["PROMO_FULL_FILE"],
+    multiprocessing=1,
+    output_configuration={"output_mode": "disk", "storage_path": RAW_DUMPS_PATH},
+)
+promo_scraper.start(limit=6)
+print("ממתין לסיום הורדת קובצי המבצעים המלאים...")
+promo_scraper.join()
+print("ההורדה הסתיימה.\n")
+
 print("=" * 60)
 print("שלב ב: ממיר את הקבצים הגולמיים ל-CSV מסודר")
 print("=" * 60)
 
 converter = ConvertingTask(
     enabled_parsers=WORKING_CHAINS,
-    files_types=["STORE_FILE", "PRICE_FULL_FILE"],
+    files_types=["STORE_FILE", "PRICE_FULL_FILE", "PROMO_FULL_FILE"],
     source_configuration={"folder": RAW_DUMPS_PATH},
     output_configuration=[{"output_mode": "csv", "output_folder": PARSED_CSV_PATH}],
     status_configuration={"database_type": "json", "base_path": "./parse_status_logs"},

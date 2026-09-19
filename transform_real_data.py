@@ -342,9 +342,135 @@ if all_products:
     else:
         print(f"\nקובץ סיכום מצומצם (current_avg): 0 רשומות (אין מחירים תקינים לסיכום)")
 
-    current_avg.to_json("current_avg_transformed.json", orient="records", force_ascii=False)
+    has_price_data = True
+    # current_avg.to_json נכתב בהמשך, אחרי עיבוד המבצעים (חלק ב-2) - כדי
+    # שעמודת ה-promo תספיק להצטרף לפני הכתיבה לקובץ.
 else:
+    has_price_data = False
     print("\n⚠️  לא נמצא אף קובץ מחירים לעיבוד")
+
+
+# ============================================================
+# חלק ב-2: עיבוד קובצי מבצעים - מצרפים ל-current_avg כעמודת promo
+# ============================================================
+print("\n" + "=" * 60)
+print("עיבוד קובצי מבצעים - כל 4 הרשתות")
+print("=" * 60)
+
+from datetime import date, datetime
+
+PROMO_FILES = {
+    "shufersal": "promo_full_file_shufersal.csv",
+    "rami_levy": "promo_full_file_rami_levy.csv",
+    "yohananof": "promo_full_file_yohananof.csv",
+    "tiv_taam": "promo_full_file_tiv_taam.csv",
+}
+
+
+def parse_promo_date(val):
+    """מנרמל תאריך מבצע למחרוזת ISO 'YYYY-MM-DD'. הרשתות לא עקביות בפורמט -
+    מנסה ISO קודם, ואז DD/MM/YYYY. מחזיר None אם אי אפשר לפרסר (מדלגים על השורה
+    במקום להפיל את כל הריצה - אותה פילוסופיה הגנתית כמו שאר הקובץ)."""
+    if pd.isna(val) or not str(val).strip():
+        return None
+    raw = str(val).strip()[:10]  # לפעמים יש גם שעה מודבקת אחרי התאריך
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
+
+
+def parse_promo_number(val):
+    try:
+        n = float(val)
+        return None if n != n else n  # n != n <=> NaN
+    except (TypeError, ValueError):
+        return None
+
+
+def extract_item_codes(row):
+    """מחזיר את רשימת הברקודים שהמבצע חל עליהם. ברוב המקרים תהיה עמודת
+    itemcode ישירה (אם הספרייה כבר "פרסה" את הרשימה המקוננת PromotionItems
+    לשורה-per-item, באותו אופן שהיא פורסת את רשימת ה-Promotions עצמה).
+    כגיבוי, אם אין עמודה כזו אבל יש עמודת promotionitems גולמית (רשימה/מחרוזת
+    לא-פרוסה), מנסים לחלץ ItemCode ממנה עם regex. אם שניהם נכשלים - רשימה
+    ריקה, והשורה מדולגת (לא מפילים את כל הריצה על שורת מבצע אחת בעייתית)."""
+    val = row.get("itemcode")
+    if not pd.isna(val) and str(val).strip():
+        return [str(val).strip()]
+    raw = row.get("promotionitems")
+    if pd.isna(raw) or not str(raw).strip():
+        return []
+    return re.findall(r"itemcode['\"]?\s*[:=]\s*['\"]?(\d{6,14})", str(raw), re.IGNORECASE)
+
+
+promo_by_key = {}  # (chain_id, barcode) -> {label, qty, deal_total, start_date, end_date}
+today_str = date.today().strftime("%Y-%m-%d")
+
+for friendly_id, fname in PROMO_FILES.items():
+    fpath = f"{INPUT_DIR}/{fname}"
+    try:
+        promo_df = load_and_ffill(fpath, ["found_folder", "file_name", "chainid", "subchainid", "storeid", "bikoretno"])
+    except FileNotFoundError:
+        print(f"\n{friendly_id}: ⚠️  קובץ {fname} לא נמצא - מדלגים (ייתכן ולא היה בדגימה)")
+        continue
+
+    print(f"\n{friendly_id} ({fname}):")
+    print(f"  סה\"כ שורות מבצע: {len(promo_df)}")
+
+    n_kept = n_club = n_expired = n_bad = 0
+    for _, row in promo_df.iterrows():
+        item_codes = extract_item_codes(row)
+        if not item_codes:
+            n_bad += 1
+            continue
+
+        clubs = row.get("clubs")
+        if not pd.isna(clubs) and str(clubs).strip() not in ("", "0"):
+            n_club += 1
+            continue
+
+        end_date = parse_promo_date(row.get("promotionenddate"))
+        if end_date is None or end_date < today_str:
+            n_expired += 1
+            continue
+        start_date = parse_promo_date(row.get("promotionstartdate")) or end_date
+
+        deal_total = parse_promo_number(row.get("discountedprice"))
+        if deal_total is None or deal_total <= 0:
+            n_bad += 1
+            continue
+
+        qty = parse_promo_number(row.get("minqty")) or parse_promo_number(row.get("minnoofitemofered")) or 1
+        qty = int(qty) if qty >= 1 else 1
+
+        label = clean_str(row.get("promotiondescription")) or "מבצע"
+        promo_record = {
+            "label": label, "qty": qty, "deal_total": round(deal_total, 2),
+            "start_date": start_date, "end_date": end_date,
+        }
+
+        for barcode in item_codes:
+            key = (friendly_id, barcode)
+            existing = promo_by_key.get(key)
+            if existing is None or end_date < existing["end_date"]:
+                promo_by_key[key] = promo_record
+        n_kept += 1
+
+    print(f"  נשמרו: {n_kept} | מועדון בלבד (סוננו): {n_club} | פג תוקף (סוננו): {n_expired} | לא תקין (סוננו): {n_bad}")
+
+print(f"\nסה\"כ מבצעים ייחודיים (אחרי דה-דופ' לפי רשת+ברקוד): {len(promo_by_key)}")
+
+if has_price_data:
+    if promo_by_key:
+        current_avg["promo"] = current_avg.apply(
+            lambda r: promo_by_key.get((r["chain_id"], r["barcode"])), axis=1
+        )
+        n_with_promo = int(current_avg["promo"].notna().sum())
+        print(f"מוצרים עם מבצע פעיל בטבלת current_avg: {n_with_promo} מתוך {len(current_avg)}")
+    current_avg.to_json("current_avg_transformed.json", orient="records", force_ascii=False)
 
 
 # ============================================================
