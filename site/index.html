@@ -9,9 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root{
     --bg: #F5F6F1;
@@ -355,15 +353,31 @@
   </div>
 </div>
 
+<!-- Chart.js/Leaflet נטענים כאן (סוף ה-body), לא ב-head, כדי שדפדפן יוכל
+     לפרסר ולצייר את כל תוכן העמוד (טבלה, פילטרים) בלי לחכות להורדה של
+     שתי ספריות חיצוניות שלא נחוצות עד לרינדור הגרפים/מפה, שקורה בכל מקרה
+     רק אחרי טעינת הדאטה. סדר הטעינה בפועל (וממנו התלות של קוד האפליקציה
+     בסקריפטים האלה) לא משתנה - רק המיקום, כי סקריפט רגיל (בלי defer/async)
+     חוסם וטוען לפי סדר הופעה, לא משנה אם הוא ב-head או בסוף ה-body. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 async function loadDashboardData(){
-  const [chains, stores, products, current_avg] = await Promise.all([
+  // monthly_history.json נטען בהגנה (לא Promise.all עם השאר) - קובץ חדש
+  // יחסית שנכתב ע"י transform_real_data.py; אם משום מה עוד לא קיים בדיפלוי
+  // הראשון אחרי הפיצ'ר, או ש-fetch נכשל מכל סיבה, נופלים בחזרה למערך ריק
+  // (בדיוק ההתנהגות הקודמת) במקום להפיל את כל טעינת הדשבורד.
+  const monthlyHistoryPromise = fetch('data/monthly_history.json')
+    .then(r => r.ok ? r.json() : [])
+    .catch(() => []);
+  const [chains, stores, products, current_avg, monthly_history] = await Promise.all([
     fetch('data/chains.json').then(r => r.json()),
     fetch('data/stores.json').then(r => r.json()),
     fetch('data/products.json').then(r => r.json()),
     fetch('data/current_avg.json').then(r => r.json()),
+    monthlyHistoryPromise,
   ]);
-  return { chains, stores, products, current_avg, monthly_history: [], recent_weekly: [] };
+  return { chains, stores, products, current_avg, monthly_history, recent_weekly: [] };
 }
 </script>
 <script>
@@ -766,7 +780,13 @@ async function loadDashboardData(){
     const prods = filteredProducts();
     const acts = activeChains();
     const barcodes = prods.map(p => p.barcode);
-    document.getElementById('trendSubtitle').textContent = (monthly_history.length === 0 && recent_weekly.length === 0)
+    // הבדיקה תלויה בתקופה הנבחרת ולא רק "יש היסטוריה בכלל" - היסטוריה
+    // שבועית (recent_weekly) לא מוזנת כרגע ע"י הצינור (רק חודשית), אז אם
+    // הייתה נבדקת רק "יש היסטוריה כלשהי" ותצוגת שבוע נבחרת, הכותרת הייתה
+    // מטעה ("יש נתונים") מעל גרף ריק. במקום זה, בודקים את מקור הדאטה
+    // שבאמת מוזן לתקופה שנבחרה כרגע.
+    const periodHasData = state.period === 'week' ? recent_weekly.length > 0 : monthly_history.length > 0;
+    document.getElementById('trendSubtitle').textContent = !periodHasData
       ? 'אין עדיין מספיק היסטוריית מחירים - תתחיל להצטבר מהריצה היומית הבאה'
       : `ממוצע ${prods.length} מוצרים מסוננים · ${periodLabel[state.period]}`;
 

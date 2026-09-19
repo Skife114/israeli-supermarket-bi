@@ -690,3 +690,68 @@ else:
         json.dump([], f)
 
 print(f"  נכתבו קבצי דשבורד ל-{SITE_DATA_DIR}/: chains.json, stores.json, products.json, current_avg.json")
+
+
+# ============================================================
+# חלק ה: היסטוריית מחירים חודשית - מצטברת לאורך זמן (לא נדרסת בכל ריצה),
+# כדי להזין את גרף "מגמת מחיר" בדשבורד. הגרף וכל לוגיקת הרינדור שלו כבר
+# בנויים ב-site/index.html (buildTrendSeries/monthlyMap וכו') ומחכים
+# למערך monthly_history - אבל loadDashboardData() החזיר עד עכשיו תמיד []
+# (אף שלב בצינור לא בנה בפועל היסטוריה) - הגרף הציג תמיד "אין עדיין מספיק
+# היסטוריה", לצמיתות, לכל מבקר. זה מתקן את זה בצד הפייתון בלבד; ה-JS כבר
+# מוכן ולא משתנה.
+# כל ריצה "מעדכנת" (לא מוסיפה כפילות) את הרשומה של החודש הנוכחי לכל
+# (chain_id, barcode) - כך שהקובץ גדל בסדר גודל של current_avg פעם בחודש,
+# לא בכל ריצה יומית. נשמרים רק MONTHLY_HISTORY_RETENTION_MONTHS החודשים
+# האחרונים כדי שהקובץ לא יגדל ללא גבול לאורך שנים ויפגע בזמן הטעינה של
+# האתר (הדאטה כבר כרגע ~1.6MB דחוס - זה בדיוק סוג הבעיה שרוצים להימנע ממנה).
+# ============================================================
+print("\n" + "=" * 60)
+print("עדכון היסטוריית מחירים חודשית")
+print("=" * 60)
+
+MONTHLY_HISTORY_PATH = os.path.join(SITE_DATA_DIR, "monthly_history.json")
+MONTHLY_HISTORY_RETENTION_MONTHS = 24
+
+
+def shift_month(month_str, delta):
+    """month_str בפורמט 'YYYY-MM'. מזיז delta חודשים (יכול להיות שלילי)."""
+    y, m = (int(x) for x in month_str.split("-"))
+    total = y * 12 + (m - 1) + delta
+    return f"{total // 12}-{total % 12 + 1:02d}"
+
+
+if has_price_data:
+    try:
+        with open(MONTHLY_HISTORY_PATH, encoding="utf-8") as f:
+            existing_history = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        existing_history = []
+
+    current_month = date.today().strftime("%Y-%m")
+    oldest_kept_month = shift_month(current_month, -(MONTHLY_HISTORY_RETENTION_MONTHS - 1))
+
+    # dict לפי (chain_id, barcode, month) -> price: עדכון החודש הנוכחי דורס
+    # רשומה קיימת של אותו חודש במקום ליצור כפילות (הריצה היומית "עומדת
+    # מחדש" את מחיר החודש הנוכחי בכל פעם - זה בדיוק הכוונה, לא באג).
+    history_by_key = {}
+    for r in existing_history:
+        if isinstance(r, dict) and r.get("month", "") >= oldest_kept_month \
+                and r.get("chain_id") and r.get("barcode") and r.get("price") is not None:
+            history_by_key[(r["chain_id"], r["barcode"], r["month"])] = r["price"]
+
+    for r in current_avg.itertuples(index=False):
+        history_by_key[(r.chain_id, r.barcode, current_month)] = r.avg_price
+
+    new_history = [
+        {"chain_id": k[0], "barcode": k[1], "month": k[2], "price": v}
+        for k, v in history_by_key.items()
+    ]
+    print(f"  היסטוריה קודמת: {len(existing_history)} רשומות | אחרי עדכון+גיזום "
+          f"(נשמר מ-{oldest_kept_month} ואילך): {len(new_history)} רשומות")
+
+    with open(MONTHLY_HISTORY_PATH, "w", encoding="utf-8") as f:
+        json.dump(new_history, f, ensure_ascii=False)
+else:
+    print("  אין נתוני מחיר בריצה הזו (has_price_data=False) - לא מעדכנים היסטוריה, "
+          "משאירים את הקובץ הקיים כמו שהוא")
