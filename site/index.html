@@ -611,8 +611,8 @@ async function loadDashboardData(){
             <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>`;
         const urlBuilder = CHAIN_PRODUCT_URL[c.id];
         const priceEl = urlBuilder
-          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}22;color:var(--ink);">${priceInner}</a>`
-          : `<span class="price-cell" style="background:${bg}22;color:var(--ink);">${priceInner}</span>`;
+          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}8c;color:var(--ink);">${priceInner}</a>`
+          : `<span class="price-cell" style="background:${bg}8c;color:var(--ink);">${priceInner}</span>`;
         return `<td>
           ${priceEl}
           ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
@@ -952,7 +952,7 @@ async function loadDashboardData(){
         if(v == null) return '<td><span class="no-data">לא נמכר</span></td>';
         const t = max === min ? 0 : (v - min) / (max - min);
         const bg = colorForRatio(t);
-        return `<td><span class="price-cell" style="background:${bg}22;color:${bg};">₪${v.toFixed(2)}</span></td>`;
+        return `<td><span class="price-cell" style="background:${bg}8c;color:var(--ink);">₪${v.toFixed(2)}</span></td>`;
       }).join('');
       return `<tr><td><div class="prod-name">${p.name || ('מוצר ' + b.barcode)}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
     }).join('');
