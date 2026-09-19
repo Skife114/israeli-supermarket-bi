@@ -384,7 +384,18 @@ async function loadDashboardData(){
   };
 
   const chainById = Object.fromEntries(chains.map(c => [c.id, c]));
-  const productByBarcode = Object.fromEntries(products.map(p => [p.barcode, p]));
+
+  // ברקודים פנימיים (PLU, בעיקר בפריטים שקולים) לפעמים חוזרים על עצמם בין
+  // רשתות עבור שני מוצרים שונים לגמרי - אז השם הנכון תלוי ברשת. productByChainBarcode
+  // נותן את השם המדויק כשידועה הרשת הרלוונטית; productByBarcode/productCatalog הם
+  // "נציג" גלובלי אחד לכל ברקוד, לשימוש רק כשאין הקשר רשת (חיפוש, קטגוריות, פילטרים).
+  const productByChainBarcode = Object.fromEntries(products.map(p => [p.chain_id + '|' + p.barcode, p]));
+  const productByBarcode = {};
+  products.forEach(p => { if(!(p.barcode in productByBarcode)) productByBarcode[p.barcode] = p; });
+  const productCatalog = Object.values(productByBarcode);
+  function productFor(barcode, chainId){
+    return (chainId && productByChainBarcode[chainId + '|' + barcode]) || productByBarcode[barcode];
+  }
 
   // ---- מבני עזר לחיפוש מהיר ----
   const currentAvgMap = {}; // key: chain_id|barcode -> {avg_price, n_on_sale, n_stores}
@@ -448,7 +459,7 @@ async function loadDashboardData(){
     chainChipsEl.appendChild(chip);
   });
 
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ['all', ...Array.from(new Set(productCatalog.map(p => p.category)))];
   const categorySelect = document.getElementById('categorySelect');
   categories.forEach(cat => {
     const opt = document.createElement('option');
@@ -459,7 +470,7 @@ async function loadDashboardData(){
 
   const manufacturerSelect = document.getElementById('manufacturerSelect');
   function refreshManufacturerOptions(){
-    const pool = state.category === 'all' ? products : products.filter(p => p.category === state.category);
+    const pool = state.category === 'all' ? productCatalog : productCatalog.filter(p => p.category === state.category);
     const mans = ['all', ...Array.from(new Set(pool.map(p => p.manufacturer)))];
     manufacturerSelect.innerHTML = '';
     mans.forEach(m => {
@@ -509,7 +520,7 @@ async function loadDashboardData(){
 
   // ---- לוגיקת חישוב ----
   function filteredProducts(){
-    return products.filter(p => {
+    return productCatalog.filter(p => {
       if(state.category !== 'all' && p.category !== state.category) return false;
       if(state.manufacturer !== 'all' && p.manufacturer !== state.manufacturer) return false;
       if(state.search && !(p.name||'').includes(state.search) && !(p.manufacturer||'').includes(state.search)) return false;
@@ -597,6 +608,11 @@ async function loadDashboardData(){
       const rowPrices = acts.map(c => currentAvgMap[c.id+'|'+p.barcode]);
       const validPrices = rowPrices.filter(Boolean).map(r => r.avg_price);
       const min = Math.min(...validPrices), max = Math.max(...validPrices);
+      // שם התצוגה: לוקחים את הרשת הראשונה שיש לה בפועל נתון מחיר בשורה הזו,
+      // ולא "נציג" גנרי - כדי לא להציג שם מוצר שגוי כשברקוד פנימי (PLU) חוזר
+      // על עצמו בין רשתות לפריטים שונים לגמרי.
+      const repChainIdx = rowPrices.findIndex(Boolean);
+      const dispProduct = productFor(p.barcode, repChainIdx > -1 ? acts[repChainIdx].id : null);
       const cells = acts.map((c, i) => {
         const rec = rowPrices[i];
         if(!rec) return '<td><span class="no-data">אין נתון</span></td>';
@@ -623,8 +639,8 @@ async function loadDashboardData(){
       }).join('');
       return `<tr>
         <td>
-          <div class="prod-name">${p.name || ('מוצר ' + p.barcode)}</div>
-          <div class="prod-meta">${p.category}${p.manufacturer ? ' · ' + p.manufacturer : ''}</div>
+          <div class="prod-name">${dispProduct.name || ('מוצר ' + p.barcode)}</div>
+          <div class="prod-meta">${dispProduct.category}${dispProduct.manufacturer ? ' · ' + dispProduct.manufacturer : ''}</div>
         </td>
         ${cells}
       </tr>`;
@@ -784,7 +800,7 @@ async function loadDashboardData(){
     const chainId = btn.dataset.chain, barcode = btn.dataset.barcode;
     const rec = currentAvgMap[chainId+'|'+barcode];
     const chain = chainById[chainId];
-    const product = productByBarcode[barcode];
+    const product = productFor(barcode, chainId);
     if(!rec || !rec.promo) return;
     modalTrigger = btn;
     openPromoModal(chain, product, rec);
@@ -844,7 +860,7 @@ async function loadDashboardData(){
   function searchProducts(q){
     q = q.trim();
     if(!q) return [];
-    return products.filter(p => (p.name||'').includes(q) || (p.manufacturer||'').includes(q) || (p.category||'').includes(q)).slice(0, 12);
+    return productCatalog.filter(p => (p.name||'').includes(q) || (p.manufacturer||'').includes(q) || (p.category||'').includes(q)).slice(0, 12);
   }
 
   function renderSuggestions(list){
@@ -926,7 +942,8 @@ async function loadDashboardData(){
       listEl.innerHTML = '<span class="no-data">הסל ריק - הוסיפו מוצרים מהתפריט למעלה</span>';
     } else {
       listEl.innerHTML = basket.map(b => {
-        const p = productByBarcode[b.barcode];
+        const repChain = chains.find(c => currentAvgMap[c.id+'|'+b.barcode]);
+        const p = productFor(b.barcode, repChain && repChain.id);
         const pName = p.name || ('מוצר ' + b.barcode);
         return `<div class="basket-item-chip">${pName} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${pName} מהסל">✕</button></div>`;
       }).join('');
@@ -943,7 +960,8 @@ async function loadDashboardData(){
     }
 
     body.innerHTML = basket.map(b => {
-      const p = productByBarcode[b.barcode];
+      const repChain = chains.find(c => currentAvgMap[c.id+'|'+b.barcode]);
+      const p = productFor(b.barcode, repChain && repChain.id);
       const rowVals = chains.map(c => {
         const rec = currentAvgMap[c.id+'|'+b.barcode];
         return rec ? rec.avg_price * b.qty : null;

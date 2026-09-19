@@ -280,6 +280,7 @@ for friendly_id, fname in PRICE_FILES.items():
         price_df.groupby("itemcode").first()[["itemname", "manufacturename"]]
         .reset_index().rename(columns={"itemcode": "barcode", "itemname": "name", "manufacturename": "manufacturer"})
     )
+    products["chain_id"] = friendly_id
     all_products.append(products)
 
     prices = price_df[["chainid", "storeid", "itemcode", "itemprice"]].copy()
@@ -289,7 +290,11 @@ for friendly_id, fname in PRICE_FILES.items():
     all_prices.append(prices[["chain_id", "store_id", "barcode", "price"]])
 
 if all_products:
-    products_combined = pd.concat(all_products, ignore_index=True).drop_duplicates(subset="barcode", keep="first")
+    # דה-דופ' לפי (chain_id, barcode) ולא לפי barcode בלבד: הרשתות משתמשות
+    # מדי פעם באותו קוד פנימי (PLU, בדרך כלל בפריטים שקולים) לשני מוצרים
+    # שונים לגמרי בכל רשת - דה-דופ' גלובלי לפי barcode היה משאיר רק את השם
+    # של הרשת הראשונה שעובדה, ומציג אותו (שגוי) גם לרשתות האחרות.
+    products_combined = pd.concat(all_products, ignore_index=True).drop_duplicates(subset=["chain_id", "barcode"], keep="first")
     prices_combined = pd.concat(all_prices, ignore_index=True)
 
     # תא ריק ב-itemname/manufacturename הופך ל-NaN של pandas (na_values=[""]).
