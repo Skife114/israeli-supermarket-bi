@@ -55,12 +55,26 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git commit -m "chore: refresh fallback/cache/dashboard data [skip ci]"
             # מישהו יכול לדחוף ל-main בזמן שהריצה הזו (שאורכת כ-20 דקות) עדיין
-            # רצה - אז main המרוחק עלול להתקדם לפני שמגיעים לכאן. git pull
-            # --rebase לפני push מיישר את ה-commit שלנו על גבי מה שהתקדם,
-            # במקום שה-push יידחה ("fetch first") ויפיל את השלב הזה בכלל.
-            git pull --rebase origin main
-            git push
-            echo "עודכן ונדחף data/ עם נתונים טריים."
+            # רצה - אז main המרוחק עלול להתקדם לפני שמגיעים לכאן. כל הקבצים
+            # שאנחנו מקומטים כאן (caches + site/data/*.json) הם תוצר-הרצה מלא
+            # מאפס בכל ריצה - לא עריכה ידנית - אז אם ריצה מקבילה אחרת שינתה
+            # את *אותם* קבצים באותו זמן, אין טעם למזג שורה-שורה בין שני
+            # "צילומי מצב" תקפים; גרסת הריצה הזו (שהיא גם העדכנית ביותר) פשוט
+            # אמורה לנצח על פני קונפליקט. משתמשים ב-merge -X ours (לא rebase)
+            # בדיוק בשביל זה: קונפליקט בקובץ שנוגע לנו נפתר תמיד לטובת מה
+            # שיצרנו הרגע; קבצים אחרים שהשתנו ב-origin וללא קונפליקט עדיין
+            # ממוזגים כרגיל. נסיון חוזר קצר (עד 3 פעמים) מכסה גם את המקרה הנדיר
+            # שדחיפה מקבילה נוספת מגיעה בדיוק בין ה-fetch ל-push שלנו.
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git merge -X ours --no-edit origin/main
+              if git push; then
+                echo "עודכן ונדחף data/ עם נתונים טריים (ניסיון $attempt)."
+                break
+              fi
+              echo "push נדחה (ניסיון $attempt) - מנסים שוב..."
+              sleep 5
+            done
           else
             echo "אין שינוי בקבצים - לא נדרש commit."
           fi
