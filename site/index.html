@@ -530,10 +530,24 @@ async function loadDashboardData(){
   }
   manufacturerSelect.addEventListener('change', () => { state.manufacturer = manufacturerSelect.value; state.page = 0; render(); });
 
+  // דיבאונס: לפני זה, כל הקלדה בתיבת החיפוש הפעילה render() מלא (סריקת כל
+  // קטלוג המוצרים + רינדור טבלה+גרפים) באופן מיידי וחוסם - הקלדה מהירה
+  // גרמה לכמה רינדורים רצופים שגרעו מתגובתיות השדה עצמו. state.search
+  // מתעדכן מיד (כל קוד אחר שקורא אותו רואה ערך עדכני), רק ה-render()
+  // היקר מתעכב ומתבצע פעם אחת בסוף ההקלדה במקום פעם על כל תו.
+  function debounce(fn, delayMs){
+    let timer = null;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delayMs);
+    };
+  }
+  const debouncedRender = debounce(render, 180);
+
   document.getElementById('searchInput').addEventListener('input', (e) => {
     state.search = e.target.value.trim();
     state.page = 0;
-    render();
+    debouncedRender();
   });
 
   const periodButtons = Array.from(document.querySelectorAll('#periodSegment button'));
@@ -633,8 +647,15 @@ async function loadDashboardData(){
     });
   }
 
-  function renderTable(){
-    const allProds = filteredProducts();
+  function renderTable(filteredProds){
+    // filteredProds אופציונלי - render() כבר מחשב filteredProducts() פעם
+    // אחת ומעביר אותו גם ל-renderTable וגם ל-renderCharts (שתיהן משתמשות
+    // באותו פילטר בדיוק), כדי לא לסרוק את כל קטלוג המוצרים פעמיים על כל
+    // הקלדה בחיפוש. קריאות עצמאיות (כמו דפדוף, שלא צריך לרענן את הגרפים)
+    // עדיין עובדות - אם לא הועבר filteredProds, מחשבים אותו מקומית בדיוק
+    // כמו קודם. שם שונה מ-`prods` (המשתנה הפנימי כמה שורות למטה, שמייצג
+    // רק את פרוסת העמוד הנוכחי) - כדי לא להתנגש איתו.
+    const allProds = filteredProds || filteredProducts();
     const acts = activeChains();
     const headRow = document.getElementById('tableHeadRow');
     headRow.innerHTML = '<th scope="col">מוצר</th>' + acts.map(c => `<th scope="col"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-left:4px;"></span>${c.name_he}</th>`).join('');
@@ -776,8 +797,8 @@ async function loadDashboardData(){
     });
   }
 
-  function renderCharts(){
-    const prods = filteredProducts();
+  function renderCharts(filteredProds){
+    const prods = filteredProds || filteredProducts();
     const acts = activeChains();
     const barcodes = prods.map(p => p.barcode);
     // הבדיקה תלויה בתקופה הנבחרת ולא רק "יש היסטוריה בכלל" - היסטוריה
@@ -851,9 +872,12 @@ async function loadDashboardData(){
   }
 
   function render(){
-    refreshManufacturerOptions();
-    renderTable();
-    renderCharts();
+    refreshManufacturerOptions(); // יכול לאפס state.manufacturer - חייב לרוץ
+                                   // לפני filteredProducts(), לא אחריו
+    const prods = filteredProducts(); // מחושב פעם אחת ומועבר לשתיהן, במקום
+                                       // שכל אחת תסרוק מחדש את כל הקטלוג
+    renderTable(prods);
+    renderCharts(prods);
   }
 
   // ---- מודל מבצע ----
@@ -941,11 +965,14 @@ async function loadDashboardData(){
     basketSuggestions.classList.remove('hidden');
   }
 
-  basketSearchInput.addEventListener('input', () => {
-    basketSelectedBarcode = null;
+  const debouncedBasketSearch = debounce(() => {
     const results = searchProducts(basketSearchInput.value);
     if(basketSearchInput.value.trim()) renderSuggestions(results);
     else basketSuggestions.classList.add('hidden');
+  }, 150);
+  basketSearchInput.addEventListener('input', () => {
+    basketSelectedBarcode = null;
+    debouncedBasketSearch();
   });
 
   basketSearchInput.addEventListener('focus', () => {

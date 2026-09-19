@@ -17,6 +17,12 @@ name: Scrape And Parse Sample
 jobs:
   scrape-and-parse:
     runs-on: ubuntu-latest
+    # ריצה רגילה לוקחת כ-20-27 דקות; בלי הגבלה מפורשת, GitHub Actions
+    # נותן עד 360 דקות (6 שעות) ברירת מחדל - אם ריצה תיתקע (למשל hang
+    # ברשת מול שרת FTP של רשת), היא הייתה יכולה לתפוס runner ולבזבז שעות
+    # של דקות-ריצה לפני שמישהו שם לב. 45 דקות נותן שוליים נדיבים לימים
+    # איטיים יותר, בלי לחכות שעות על ריצה שכבר ברור שנתקעה.
+    timeout-minutes: 45
     permissions:
       contents: write
     steps:
