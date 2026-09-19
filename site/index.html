@@ -32,6 +32,12 @@
     font-family:'Assistant',sans-serif; font-feature-settings:"tnum" 1; font-variant-numeric: tabular-nums;}
   h1,h2,h3,.display{font-family:'Rubik',sans-serif;}
   .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 60px;}
+  .skip-link{
+    position:absolute; top:-40px; right:8px; z-index:200;
+    background:var(--ink); color:#fff; padding:10px 16px; border-radius:0 0 8px 8px;
+    text-decoration:none; font-weight:700; font-size:14px; transition:top .15s ease;
+  }
+  .skip-link:focus{top:0;}
 
   header.hero{padding:18px 4px 22px;}
   header.hero h1{font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-0.02em;}
@@ -43,13 +49,15 @@
     display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end;
   }
   .field{display:flex;flex-direction:column;gap:6px;}
-  .field label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .field label, .field legend{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  fieldset.field{border:none;margin:0;padding:0;}
+  fieldset.field legend{padding:0;}
   .chips{display:flex;flex-wrap:wrap;gap:6px;max-width:420px;}
   .chip{
     padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);
     background:var(--surface); font-size:13px; font-weight:600; cursor:pointer;
     display:flex; align-items:center; gap:6px; user-select:none;
-    transition:.15s ease;
+    transition:.15s ease; font-family:inherit; color:var(--ink);
   }
   .chip .dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .chip.active{border-color:transparent;color:#fff;}
@@ -119,6 +127,11 @@
 
   footer.note{margin-top:26px;font-size:12px;color:var(--ink-soft);line-height:1.7;}
   footer.note b{color:var(--ink);}
+  .accessibility-statement{margin-top:14px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;}
+  .accessibility-statement summary{cursor:pointer;font-weight:700;color:var(--ink);padding:6px 0;font-size:13px;}
+  .accessibility-statement b{color:var(--ink);}
+  .accessibility-statement ul{margin:4px 0;padding-inline-start:20px;}
+  .accessibility-statement a{color:var(--accent);}
 
   /* --- תג מבצע לחיץ --- */
   .promo-badge{
@@ -192,9 +205,14 @@
   /* --- מפת סניפים --- */
   #branchMap{height:460px;border-radius:12px;margin-top:6px;z-index:1;}
   .map-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--ink-soft);}
+  .store-list-details{margin-top:14px;font-size:13.5px;}
+  .store-list-details summary{cursor:pointer;font-weight:700;color:var(--ink);padding:6px 0;}
+  .store-list-details h3{margin:14px 0 6px;font-size:13.5px;font-family:'Assistant',sans-serif;font-weight:700;}
+  .store-list-details ul{margin:0 0 0 0;padding-inline-start:20px;}
+  .store-list-details li{padding:2px 0;color:var(--ink-soft);}
   .map-legend span{display:inline-flex;align-items:center;gap:5px;}
   .map-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
-  .store-popup h4{margin:0 0 4px;font-size:14px;font-family:'Rubik',sans-serif;}
+  .store-popup h3{margin:0 0 4px;font-size:14px;font-family:'Rubik',sans-serif;}
   .store-popup .sp-addr{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
   .store-popup table{width:100%;font-size:12px;}
   .store-popup td{padding:2px 0;border:none;text-align:right;}
@@ -202,6 +220,7 @@
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">דלג לתוכן הראשי</a>
 <div class="wrap">
 
   <header class="hero">
@@ -210,36 +229,36 @@
   </header>
 
   <div class="toolbar">
-    <div class="field">
-      <label>רשתות</label>
+    <fieldset class="field">
+      <legend>רשתות</legend>
       <div class="chips" id="chainChips"></div>
-    </div>
+    </fieldset>
     <div class="field">
-      <label>קטגוריה</label>
+      <label for="categorySelect">קטגוריה</label>
       <select id="categorySelect"></select>
     </div>
     <div class="field">
-      <label>יצרן</label>
+      <label for="manufacturerSelect">יצרן</label>
       <select id="manufacturerSelect"></select>
     </div>
     <div class="field">
-      <label>חיפוש מוצר</label>
+      <label for="searchInput">חיפוש מוצר</label>
       <input type="text" id="searchInput" placeholder="לדוגמה: חלב, קולה, עוף...">
     </div>
-    <div class="field">
-      <label>תקופת השוואה</label>
+    <fieldset class="field">
+      <legend>תקופת השוואה</legend>
       <div class="segmented" id="periodSegment">
-        <button data-period="week">שבוע</button>
-        <button data-period="month">חודש</button>
-        <button data-period="quarter">רבעון</button>
-        <button data-period="year">שנה</button>
+        <button type="button" data-period="week" aria-pressed="false">שבוע</button>
+        <button type="button" data-period="month" aria-pressed="true">חודש</button>
+        <button type="button" data-period="quarter" aria-pressed="false">רבעון</button>
+        <button type="button" data-period="year" aria-pressed="false">שנה</button>
       </div>
-    </div>
-    <button class="reset-btn" id="resetBtn">איפוס סינון</button>
+    </fieldset>
+    <button type="button" class="reset-btn" id="resetBtn">איפוס סינון</button>
   </div>
 
   <div class="grid">
-    <div class="card">
+    <div class="card" id="mainContent" tabindex="-1">
       <h2 id="tableTitle">טבלת השוואת מחירים <small id="tableSubtitle"></small></h2>
       <div class="legend-row">
         <span>זול יותר</span>
@@ -257,9 +276,9 @@
 
     <div class="card">
       <h2>מגמת מחיר <small id="trendSubtitle">ממוצע המוצרים המסוננים, לפי רשת</small></h2>
-      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      <div class="chart-box"><canvas id="trendChart" role="img" aria-label="גרף מגמת מחיר"></canvas></div>
       <h2 style="margin-top:22px;">מחיר ממוצע נוכחי לפי רשת <small>עבור המוצרים המסוננים</small></h2>
-      <div class="chart-box"><canvas id="barChart"></canvas></div>
+      <div class="chart-box"><canvas id="barChart" role="img" aria-label="גרף עמודות: מחיר ממוצע נוכחי לפי רשת"></canvas></div>
     </div>
   </div>
 
@@ -289,6 +308,10 @@
     <div class="chips" id="mapChainChips" style="margin-bottom:12px;"></div>
     <div id="branchMap"></div>
     <div class="map-legend" id="mapLegend"></div>
+    <details class="store-list-details">
+      <summary>רשימת סניפים בטקסט (חלופה נגישה למפה)</summary>
+      <div id="storeListText"></div>
+    </details>
   </div>
 
   <footer class="note">
@@ -297,9 +320,32 @@
     חלק ממיקומי הסניפים במפה מקורבים ברמת העיר בלבד, במקרים שבהם לא נמצאה כתובת מדויקת.
     זהו פרויקט אישי ואינו מקור מידע רשמי של הרשתות.
   </footer>
+
+  <details class="accessibility-statement">
+    <summary>הצהרת נגישות</summary>
+    <p>
+      אתר זה נבנה בשאיפה לעמוד בדרישות <b>תקן ישראלי 5568</b> (המבוסס על הנחיות WCAG 2.0 ברמה AA),
+      בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), תשע"ג-2013.
+    </p>
+    <p><b>מה בוצע:</b></p>
+    <ul>
+      <li>ניווט מלא באמצעות מקלדת לכל הפילטרים, הכפתורים והרכיבים האינטראקטיביים</li>
+      <li>קישור "דלג לתוכן הראשי" למי שמנווט במקלדת</li>
+      <li>תיוג מלא (label/fieldset/legend) של כל שדות הסינון</li>
+      <li>ניגודיות צבעים תקינה בטבלת ההשוואה ובשאר רכיבי האתר</li>
+      <li>תיאור טקסטואלי (aria-label) לגרפים, בנוסף לנתונים המלאים בטבלה</li>
+      <li>חלונית מידע (מבצע) עם ניהול פוקוס תקין וסגירה במקש Escape</li>
+      <li>רשימת סניפים בטקסט, כחלופה נגישה למפה האינטראקטיבית</li>
+    </ul>
+    <p><b>מגבלות ידועות:</b> המפה האינטראקטיבית עצמה (סימוני הסניפים) אינה נגישה במלואה לניווט מקלדת/קורא מסך -
+      לכן סופקה רשימת הסניפים בטקסט כחלופה מלאה למידע. גרף מגמת המחיר לאורך זמן עדיין לא כולל היסטוריה
+      (הנתון ייבנה בהדרגה עם הריצות היומיות הבאות).</p>
+    <p><b>נתקלתם בבעיית נגישות?</b> פרטי יצירת קשר ייעודיים לדיווח על בעיות נגישות יתווספו בהמשך.</p>
+    <p>עודכן לאחרונה: 19.9.2026.</p>
+  </details>
 </div>
 
-<div class="modal-overlay hidden" id="promoModal">
+<div class="modal-overlay hidden" id="promoModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-box">
     <button class="modal-close" id="closeModalBtn" aria-label="סגור חלונית">✕</button>
     <h3 id="modalTitle"></h3>
@@ -373,8 +419,10 @@ async function loadDashboardData(){
   // ---- בניית פילטרים ----
   const chainChipsEl = document.getElementById('chainChips');
   chains.forEach(c => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'chip active';
+    chip.setAttribute('aria-pressed', 'true');
     chip.style.background = c.color;
     chip.style.borderColor = c.color;
     chip.dataset.chain = c.id;
@@ -384,11 +432,13 @@ async function loadDashboardData(){
         if(state.chains.size === 1) return; // תמיד להשאיר לפחות רשת אחת
         state.chains.delete(c.id);
         chip.classList.remove('active');
+        chip.setAttribute('aria-pressed', 'false');
         chip.style.background = '';
         chip.style.borderColor = '';
       } else {
         state.chains.add(c.id);
         chip.classList.add('active');
+        chip.setAttribute('aria-pressed', 'true');
         chip.style.background = c.color;
         chip.style.borderColor = c.color;
       }
@@ -433,7 +483,10 @@ async function loadDashboardData(){
     if(btn.dataset.period === state.period) btn.classList.add('active');
     btn.addEventListener('click', () => {
       state.period = btn.dataset.period;
-      periodButtons.forEach(b => b.classList.toggle('active', b === btn));
+      periodButtons.forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
       render();
     });
   });
@@ -446,6 +499,7 @@ async function loadDashboardData(){
     state.chains = new Set(chains.map(c => c.id));
     Array.from(chainChipsEl.children).forEach((chip,i) => {
       chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
       chip.style.background = chains[i].color;
       chip.style.borderColor = chains[i].color;
     });
@@ -522,7 +576,7 @@ async function loadDashboardData(){
     const allProds = filteredProducts();
     const acts = activeChains();
     const headRow = document.getElementById('tableHeadRow');
-    headRow.innerHTML = '<th>מוצר</th>' + acts.map(c => `<th><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-left:4px;"></span>${c.name_he}</th>`).join('');
+    headRow.innerHTML = '<th scope="col">מוצר</th>' + acts.map(c => `<th scope="col"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-left:4px;"></span>${c.name_he}</th>`).join('');
 
     const body = document.getElementById('tableBody');
     if(allProds.length === 0){
@@ -557,8 +611,8 @@ async function loadDashboardData(){
             <span class="${arrowClass}" style="font-size:10px;">${arrow}</span>`;
         const urlBuilder = CHAIN_PRODUCT_URL[c.id];
         const priceEl = urlBuilder
-          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}22;color:${bg};">${priceInner}</a>`
-          : `<span class="price-cell" style="background:${bg}22;color:${bg};">${priceInner}</span>`;
+          ? `<a class="price-cell" href="${urlBuilder(p.barcode)}" target="_blank" rel="noopener" title="צפייה במוצר באתר ${c.name_he}" style="background:${bg}22;color:var(--ink);">${priceInner}</a>`
+          : `<span class="price-cell" style="background:${bg}22;color:var(--ink);">${priceInner}</span>`;
         return `<td>
           ${priceEl}
           ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
@@ -655,7 +709,11 @@ async function loadDashboardData(){
     const seriesByChain = acts.map(c => ({ chain: c, series: buildTrendSeries(c.id, barcodes, state.period) }));
     const labels = seriesByChain[0] ? seriesByChain[0].series.map(s => s.label) : [];
 
-    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    const trendChartEl = document.getElementById('trendChart');
+    trendChartEl.setAttribute('aria-label', labels.length === 0
+      ? 'גרף מגמת מחיר - אין עדיין מספיק היסטוריה להצגה'
+      : `גרף מגמת מחיר: ${seriesByChain.map(({chain}) => chain.name_he).join(', ')}, לאורך ${periodLabel[state.period]}. הנתונים המלאים זמינים בטבלת ההשוואה.`);
+    const trendCtx = trendChartEl.getContext('2d');
     if(trendChartInst) trendChartInst.destroy();
     trendChartInst = new Chart(trendCtx, {
       type: 'line',
@@ -688,7 +746,10 @@ async function loadDashboardData(){
       const vals = barcodes.map(bc => currentAvgMap[c.id+'|'+bc]?.avg_price).filter(v=>v!=null);
       return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
     });
-    const barCtx = document.getElementById('barChart').getContext('2d');
+    const barChartEl = document.getElementById('barChart');
+    const barSummary = acts.map((c, i) => `${c.name_he}: ₪${barValues[i].toFixed(2)}`).join(', ');
+    barChartEl.setAttribute('aria-label', `גרף עמודות: מחיר ממוצע נוכחי לפי רשת, עבור ${prods.length} מוצרים מסוננים. ${barSummary}`);
+    const barCtx = barChartEl.getContext('2d');
     if(barChartInst) barChartInst.destroy();
     barChartInst = new Chart(barCtx, {
       type: 'bar',
@@ -712,6 +773,8 @@ async function loadDashboardData(){
 
   // ---- מודל מבצע ----
   const promoModal = document.getElementById('promoModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  let modalTrigger = null;
   document.getElementById('tableBody').addEventListener('click', (e) => {
     const btn = e.target.closest('.promo-badge');
     if(!btn) return;
@@ -720,14 +783,26 @@ async function loadDashboardData(){
     const chain = chainById[chainId];
     const product = productByBarcode[barcode];
     if(!rec || !rec.promo) return;
+    modalTrigger = btn;
     openPromoModal(chain, product, rec);
   });
-  document.getElementById('closeModalBtn').addEventListener('click', () => promoModal.classList.add('hidden'));
-  promoModal.addEventListener('click', (e) => { if(e.target === promoModal) promoModal.classList.add('hidden'); });
+  function closePromoModal(){
+    if(promoModal.classList.contains('hidden')) return;
+    promoModal.classList.add('hidden');
+    if(modalTrigger){ modalTrigger.focus(); modalTrigger = null; }
+  }
+  closeModalBtn.addEventListener('click', closePromoModal);
+  promoModal.addEventListener('click', (e) => { if(e.target === promoModal) closePromoModal(); });
   document.addEventListener('keydown', (e) => {
     if(e.key !== 'Escape') return;
-    if(!promoModal.classList.contains('hidden')) promoModal.classList.add('hidden');
+    closePromoModal();
     document.getElementById('basketSuggestions').classList.add('hidden');
+  });
+  // מלכודת פוקוס: כשהחלונית פתוחה, האלמנט היחיד שניתן למקד בו הוא כפתור
+  // הסגירה - אז Tab/Shift+Tab פשוט משאירים את הפוקוס עליו, במקום לברוח
+  // לתוכן שמאחורי החלונית.
+  promoModal.addEventListener('keydown', (e) => {
+    if(e.key === 'Tab'){ e.preventDefault(); closeModalBtn.focus(); }
   });
 
   function formatDate(iso){
@@ -753,6 +828,7 @@ async function loadDashboardData(){
       <div class="modal-save">חוסכים ₪${savings.toFixed(2)} (כ-${savingsPct}%) לעומת מחיר רגיל</div>
     `;
     promoModal.classList.remove('hidden');
+    closeModalBtn.focus();
   }
 
 
@@ -854,7 +930,7 @@ async function loadDashboardData(){
     }
 
     const headRow = document.getElementById('basketHeadRow');
-    headRow.innerHTML = '<th>מוצר</th>' + chains.map(c => `<th>${c.name_he}</th>`).join('');
+    headRow.innerHTML = '<th scope="col">מוצר</th>' + chains.map(c => `<th scope="col">${c.name_he}</th>`).join('');
 
     const body = document.getElementById('basketBody');
     if(basket.length === 0){
@@ -932,7 +1008,7 @@ async function loadDashboardData(){
       });
       marker.bindPopup(`
         <div class="store-popup">
-          <h4>${c.name_he} - ${s.city_name || ''}</h4>
+          <h3>${c.name_he} - ${s.city_name || ''}</h3>
           <div class="sp-addr">${s.address}</div>
         </div>
       `);
@@ -941,8 +1017,10 @@ async function loadDashboardData(){
     chainLayers[c.id] = layer;
     layer.addTo(branchMap);
 
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'chip active';
+    chip.setAttribute('aria-pressed', 'true');
     chip.style.background = c.color;
     chip.style.borderColor = c.color;
     chip.addEventListener('click', () => {
@@ -950,11 +1028,13 @@ async function loadDashboardData(){
         if(mapActiveChains.size === 1) return;
         mapActiveChains.delete(c.id);
         branchMap.removeLayer(chainLayers[c.id]);
-        chip.classList.remove('active'); chip.style.background=''; chip.style.borderColor='';
+        chip.classList.remove('active'); chip.setAttribute('aria-pressed', 'false');
+        chip.style.background=''; chip.style.borderColor='';
       } else {
         mapActiveChains.add(c.id);
         chainLayers[c.id].addTo(branchMap);
-        chip.classList.add('active'); chip.style.background=c.color; chip.style.borderColor=c.color;
+        chip.classList.add('active'); chip.setAttribute('aria-pressed', 'true');
+        chip.style.background=c.color; chip.style.borderColor=c.color;
       }
     });
     chip.textContent = `${c.name_he} (${stores.filter(s=>s.chain_id===c.id).length})`;
@@ -964,6 +1044,18 @@ async function loadDashboardData(){
   document.getElementById('mapLegend').innerHTML = chains.map(c =>
     `<span><span class="dot" style="background:${c.color};"></span>${c.name_he}</span>`
   ).join('');
+
+  // רשימת סניפים בטקסט - חלופה נגישה למפה. מפה אינטראקטיבית ויזואלית קשה
+  // להנגיש במלואה לניווט מקלדת/קורא מסך, אז המידע החיוני (אילו סניפים
+  // קיימים, איפה) ניתן גם כרשימה סטנדרטית, נגישה במלואה, בנוסף למפה עצמה.
+  document.getElementById('storeListText').innerHTML = chains.map(c => {
+    const chainStores = stores.filter(s => s.chain_id === c.id);
+    if(chainStores.length === 0) return '';
+    const items = chainStores.map(s =>
+      `<li>${s.city_name || 'עיר לא ידועה'} - ${s.address}</li>`
+    ).join('');
+    return `<h3>${c.name_he} (${chainStores.length})</h3><ul>${items}</ul>`;
+  }).join('');
  } catch (err) {
   console.error('טעינת הדשבורד נכשלה:', err);
   document.getElementById('tableBody').innerHTML =
