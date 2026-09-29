@@ -349,9 +349,14 @@ if all_products:
     prices_numeric["price"] = pd.to_numeric(prices_numeric["price"], errors="coerce")
     n_before = len(prices_numeric)
     prices_numeric = prices_numeric.dropna(subset=["price"])
+    # מחיר <= 0 הוא שגיאת-נתונים (0 ₪ או שלילי), לא מחיר אמיתי - בלי הסינון
+    # הזה שורה כזו ממוצעת יחד עם מחירים תקינים (מוריד את current_avg בטעות),
+    # ובמקרה הקיצוני של avg_price==0 בעצמו, המודל מחשב חיסכון-מבצע כ-NaN/
+    # Infinity% (חילוק באפס בצד הלקוח).
+    prices_numeric = prices_numeric[prices_numeric["price"] > 0]
     n_dropped = n_before - len(prices_numeric)
     if n_dropped:
-        print(f"  (הוסרו {n_dropped} רשומות עם מחיר חסר/לא-תקין מתוך {n_before} - "
+        print(f"  (הוסרו {n_dropped} רשומות עם מחיר חסר/לא-תקין/<=0 מתוך {n_before} - "
               f"{n_dropped/n_before*100:.0f}%, תואם למה שראינו בקבצי המקור)")
 
     current_avg = (

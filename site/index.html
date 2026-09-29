@@ -246,8 +246,10 @@
     </div>
     <fieldset class="field">
       <legend>תקופת השוואה</legend>
+      <!-- אין כפתור "שבוע": recent_weekly אף פעם לא מוזן ע"י הצינור (רק
+           monthly_history) - כפתור שקורא לנתון שלעולם לא קיים היה מציג
+           הודעת "יצטבר בריצה הבאה" מטעה שלעולם לא הופכת לנכונה. -->
       <div class="segmented" id="periodSegment">
-        <button type="button" data-period="week" aria-pressed="false">שבוע</button>
         <button type="button" data-period="month" aria-pressed="true">חודש</button>
         <button type="button" data-period="quarter" aria-pressed="false">רבעון</button>
         <button type="button" data-period="year" aria-pressed="false">שנה</button>
@@ -453,6 +455,17 @@ async function loadDashboardData(){
     return _diceSimilarity(na, nb) >= 0.2;
   }
 
+  // כל שם מוצר/יצרן/עיר/כתובת/תווית-מבצע מגיע מקובצי ה-CSV הגולמיים של
+  // הרשתות (מקור חיצוני לא מבוקר) ומוזרם ל-innerHTML במקומות רבים באתר -
+  // בלי בריחה, תו כמו & < > " בתוך שם אמיתי (למשל "בן & ג'ריס", "מארז 3<5")
+  // היה שובר את ה-HTML של התא/שורה, ובמקרה של הכנסה לתוך attribute (כמו
+  // aria-label) אפילו "בורח" מה-attribute עצמו. חייבים לברוח לפני כל הכנסה.
+  function escapeHtml(val){
+    return String(val ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[ch]));
+  }
+
   // ---- מבני עזר לחיפוש מהיר ----
   const currentAvgMap = {}; // key: chain_id|barcode -> {avg_price, n_on_sale, n_stores}
   current_avg.forEach(r => currentAvgMap[r.chain_id + '|' + r.barcode] = r);
@@ -620,6 +633,12 @@ async function loadDashboardData(){
     return chains.filter(c => state.chains.has(c.id));
   }
 
+  // הפרש חודשים בין שני מחרוזות "YYYY-MM" (b פחות a).
+  function _monthDiff(a, b){
+    const [ay, am] = a.split('-').map(Number), [by, bm] = b.split('-').map(Number);
+    return (by - ay) * 12 + (bm - am);
+  }
+
   // מגמה: מחזיר {startPrice, endPrice} לפי התקופה שנבחרה, עבור רשת+ברקוד
   function trendForPeriod(chainId, barcode, period){
     if(period === 'week'){
@@ -634,6 +653,13 @@ async function loadDashboardData(){
     else if(period === 'quarter') n = 4;
     else n = arr.length; // year -> כל הטווח שיש (עד 24 חודשים)
     const slice = arr.slice(Math.max(0, arr.length - n));
+    if(slice.length < 2) return null;
+    // עבור month/quarter (לא year, ששם כל הטווח הזמין תמיד רלוונטי): מוודאים
+    // שהמקטע רציף קלנדרית. arr מכיל רק חודשים שבהם המוצר+רשת האלה באמת
+    // הופיעו בדאטה (חודש חסר לא נכתב כ-null) - בלי הבדיקה הזו, מוצר שחסר
+    // לרשת מסוימת בחודש מסוים היה גורם להשוואה בין שני חודשים לא-סמוכים
+    // בפועל, ומוצג כאילו הייתה "מגמה חודשית/רבעונית" רגילה.
+    if(period !== 'year' && _monthDiff(slice[0].month, slice[slice.length-1].month) !== n - 1) return null;
     return { start: slice[0].price, end: slice[slice.length-1].price };
   }
 
@@ -701,18 +727,37 @@ async function loadDashboardData(){
 
     body.innerHTML = prods.map(p => {
       const rowPrices = acts.map(c => currentAvgMap[c.id+'|'+p.barcode]);
-      const validPrices = rowPrices.filter(Boolean).map(r => r.avg_price);
-      const min = Math.min(...validPrices), max = Math.max(...validPrices);
       // שם התצוגה: לוקחים את הרשת הראשונה שיש לה בפועל נתון מחיר בשורה הזו,
       // ולא "נציג" גנרי - כדי לא להציג שם מוצר שגוי כשברקוד פנימי (PLU) חוזר
       // על עצמו בין רשתות לפריטים שונים לגמרי.
       const repChainIdx = rowPrices.findIndex(Boolean);
       const dispProduct = productFor(p.barcode, repChainIdx > -1 ? acts[repChainIdx].id : null);
+      // nameDiffers מחושב לכל תא מראש (לפני min/max), כי מחיר של תא עם
+      // התנגשות-ברקוד אמיתית (לא ניסוח שונה - likelySameProduct כבר סינן
+      // את זה) לא באמת ניתן להשוואה למחירי שאר התאים באותה שורה, ולא אמור
+      // להשפיע על מי "הכי זול/יקר" בצבע - רק ההערה הטקסטואלית לא מספיקה,
+      // כי הצבע הוא האות הראשון שמשתמש רואה.
+      const cellNameDiffers = acts.map((c, i) => {
+        const rec = rowPrices[i];
+        if(!rec) return false;
+        const cellProduct = productFor(p.barcode, c.id);
+        return !!(cellProduct.name && (!dispProduct.name || !likelySameProduct(cellProduct.name, dispProduct.name)));
+      });
+      const validPrices = rowPrices
+        .map((r, i) => (r && !cellNameDiffers[i]) ? r.avg_price : null)
+        .filter(v => v != null);
+      // פחות משתי רשתות בנות-השוואה אמיתית (0 או 1) אומר שאין בכלל השוואה
+      // לעשות - צביעת התא היחיד כ"הכי זול" (ירוק) הייתה מטעה, כי אין מול
+      // מה להשוות.
+      const hasComparison = validPrices.length >= 2;
+      const min = hasComparison ? Math.min(...validPrices) : null;
+      const max = hasComparison ? Math.max(...validPrices) : null;
       const cells = acts.map((c, i) => {
         const rec = rowPrices[i];
         if(!rec) return '<td><span class="no-data">אין נתון</span></td>';
-        const t = max === min ? 0 : (rec.avg_price - min) / (max - min);
-        const bg = colorForRatio(t, 0.55);
+        const isComparable = hasComparison && !cellNameDiffers[i];
+        const t = isComparable ? (max === min ? 0 : (rec.avg_price - min) / (max - min)) : null;
+        const bg = t == null ? 'transparent' : colorForRatio(t, 0.55);
         const trend = trendForPeriod(c.id, p.barcode, state.period);
         let arrow = '', arrowClass = 'arrow-flat';
         if(trend){
@@ -733,22 +778,16 @@ async function loadDashboardData(){
         // מזה שמוצג בכותרת, מוסיפים הערה גלויה בתא עצמו - לא tooltip, כדי
         // שזה יהיה נגיש (מקלדת/מסך-קורא/מגע) בלי מצב hover.
         const cellProduct = productFor(p.barcode, c.id);
-        // dispProduct.name יכול להיות ריק (אז הכותרת עצמה נופלת ל"מוצר <ברקוד>") -
-        // במקרה כזה עדיין רוצים להראות הערה אם לרשת הזו כן יש שם אמיתי, ולכן
-        // משווים מול '' ולא מדלגים לגמרי כשלכותרת אין שם. likelySameProduct
-        // (לא פשוט !==) כדי לא להציף הערות על הבדלי ניסוח/קיצור בין רשתות
-        // שהם לא באמת מוצר אחר (ראו ההערה למעלה על likelySameProduct).
-        const nameDiffers = cellProduct.name && (!dispProduct.name || !likelySameProduct(cellProduct.name, dispProduct.name));
         return `<td>
           ${priceEl}
-          ${nameDiffers ? `<div class="cell-name-note">שם ב${c.name_he}: ${cellProduct.name}</div>` : ''}
-          ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${rec.promo.label}</button></div>` : ''}
+          ${cellNameDiffers[i] ? `<div class="cell-name-note">שם ב${escapeHtml(c.name_he)}: ${escapeHtml(cellProduct.name)}</div>` : ''}
+          ${rec.promo ? `<div><button class="promo-badge" data-chain="${c.id}" data-barcode="${p.barcode}">🏷️ ${escapeHtml(rec.promo.label)}</button></div>` : ''}
         </td>`;
       }).join('');
       return `<tr>
         <td>
-          <div class="prod-name">${dispProduct.name || ('מוצר ' + p.barcode)}</div>
-          <div class="prod-meta">${dispProduct.category}${dispProduct.manufacturer ? ' · ' + dispProduct.manufacturer : ''}</div>
+          <div class="prod-name">${escapeHtml(dispProduct.name || ('מוצר ' + p.barcode))}</div>
+          <div class="prod-meta">${escapeHtml(dispProduct.category)}${dispProduct.manufacturer ? ' · ' + escapeHtml(dispProduct.manufacturer) : ''}</div>
         </td>
         ${cells}
       </tr>`;
@@ -806,11 +845,15 @@ async function loadDashboardData(){
     }
     // year -> חלונות נגררים (rolling) של 12 חודשים אחורה מהחודש הנוכחי,
     // ולא שנים קלנדריות - כי שנה קלנדרית עלולה להיות חלקית (למשל 7 חודשים בלבד)
-    // ולתת השוואה מוטה. כך כל "שנה" מייצגת בדיוק 12 חודשים מלאים ושווים.
+    // ולתת השוואה מוטה. כך כל "שנה" מייצגת בדיוק 12 חודשים מלאים ושווים -
+    // ולכן מקטע חלקי (פחות מ-12 חודשים, קורה תמיד למקטע הישן ביותר כשאורך
+    // ההיסטוריה הכולל לא מתחלק ב-12 בשלמות) נזרק החוצה במקום להיספר כ"שנה"
+    // מלאה עם התווית "12 החודשים האחרונים"/"לפני כ-N שנים" שלא באמת מדויקת.
     const chunks = [];
     for(let end = allMonths.length; end > 0; end -= 12){
       const start = Math.max(0, end - 12);
-      chunks.unshift(allMonths.slice(start, end));
+      const chunk = allMonths.slice(start, end);
+      if(chunk.length === 12) chunks.unshift(chunk);
     }
     return chunks.map((monthsChunk, idx) => {
       const vals = [];
@@ -833,7 +876,12 @@ async function loadDashboardData(){
     // הייתה נבדקת רק "יש היסטוריה כלשהי" ותצוגת שבוע נבחרת, הכותרת הייתה
     // מטעה ("יש נתונים") מעל גרף ריק. במקום זה, בודקים את מקור הדאטה
     // שבאמת מוזן לתקופה שנבחרה כרגע.
-    const periodHasData = state.period === 'week' ? recent_weekly.length > 0 : monthly_history.length > 0;
+    // 'year' בפרט צריך לפחות 12 חודשים שונים כדי לייצר אפילו מקטע-שנה מלא
+    // אחד (ראו ההערה ב-buildTrendSeries) - "יש היסטוריה כלשהי" לא מספיק פה,
+    // אחרת הכותרת אומרת "יש נתונים" מעל גרף ריק לגמרי בזמן ההצטברות הראשוני.
+    const periodHasData = state.period === 'week' ? recent_weekly.length > 0
+      : state.period === 'year' ? new Set(monthly_history.map(r => r.month)).size >= 12
+      : monthly_history.length > 0;
     document.getElementById('trendSubtitle').textContent = !periodHasData
       ? 'אין עדיין מספיק היסטוריית מחירים - תתחיל להצטבר מהריצה היומית הבאה'
       : `ממוצע ${prods.length} מוצרים מסוננים · ${periodLabel[state.period]}`;
@@ -950,18 +998,20 @@ async function loadDashboardData(){
     const promo = rec.promo;
     const regularTotal = rec.avg_price * promo.qty;
     const savings = regularTotal - promo.deal_total;
-    const savingsPct = Math.round((savings / regularTotal) * 100);
-    document.getElementById('modalTitle').textContent = product.name;
+    // regularTotal<=0 (avg_price תקול) לא אמור לקרות יותר - הצינור כבר
+    // מסנן avg_price<=0 - אבל שומרים הגנה זולה כאן שלא תציג NaN%/Infinity%.
+    const savingsPct = regularTotal > 0 ? Math.round((savings / regularTotal) * 100) : null;
+    document.getElementById('modalTitle').textContent = product.name || ('מוצר ' + rec.barcode);
     document.getElementById('modalChain').textContent = `מבצע ב${chain.name_he}`;
     document.getElementById('modalBody').innerHTML = `
       <div class="modal-row"><span class="lbl">מחיר רגיל ליחידה</span><span>₪${rec.avg_price.toFixed(2)}</span></div>
-      <div class="modal-row"><span class="lbl">המבצע</span><span>${promo.label}</span></div>
+      <div class="modal-row"><span class="lbl">המבצע</span><span>${escapeHtml(promo.label)}</span></div>
       <div class="modal-row"><span class="lbl">כמות בעסקה</span><span>${promo.qty} יחידות</span></div>
       <div class="modal-row"><span class="lbl">מחיר רגיל ל-${promo.qty} יחידות</span><span>₪${regularTotal.toFixed(2)}</span></div>
       <div class="modal-row"><span class="lbl">מחיר במבצע</span><span>₪${promo.deal_total.toFixed(2)}</span></div>
       <div class="modal-row"><span class="lbl">תחילת המבצע</span><span>${formatDate(promo.start_date)}</span></div>
       <div class="modal-row"><span class="lbl">סוף המבצע</span><span>${formatDate(promo.end_date)}</span></div>
-      <div class="modal-save">חוסכים ₪${savings.toFixed(2)} (כ-${savingsPct}%) לעומת מחיר רגיל</div>
+      <div class="modal-save">${savingsPct == null ? '' : `חוסכים ₪${savings.toFixed(2)} (כ-${savingsPct}%) לעומת מחיר רגיל`}</div>
     `;
     promoModal.classList.remove('hidden');
     closeModalBtn.focus();
@@ -986,7 +1036,7 @@ async function loadDashboardData(){
       basketSuggestions.innerHTML = '<div class="suggestion-empty">לא נמצאו מוצרים תואמים</div>';
     } else {
       basketSuggestions.innerHTML = list.map(p =>
-        `<div class="suggestion-item" data-barcode="${p.barcode}"><span>${p.name || ('מוצר ' + p.barcode)}</span><span class="s-cat">${p.category}</span></div>`
+        `<div class="suggestion-item" data-barcode="${p.barcode}"><span>${escapeHtml(p.name || ('מוצר ' + p.barcode))}</span><span class="s-cat">${escapeHtml(p.category)}</span></div>`
       ).join('');
     }
     basketSuggestions.classList.remove('hidden');
@@ -1065,7 +1115,7 @@ async function loadDashboardData(){
         const repChain = chains.find(c => currentAvgMap[c.id+'|'+b.barcode]);
         const p = productFor(b.barcode, repChain && repChain.id);
         const pName = p.name || ('מוצר ' + b.barcode);
-        return `<div class="basket-item-chip">${pName} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${pName} מהסל">✕</button></div>`;
+        return `<div class="basket-item-chip">${escapeHtml(pName)} × ${b.qty} <button data-remove="${b.barcode}" aria-label="הסר ${escapeHtml(pName)} מהסל">✕</button></div>`;
       }).join('');
     }
 
@@ -1082,20 +1132,31 @@ async function loadDashboardData(){
     body.innerHTML = basket.map(b => {
       const repChain = chains.find(c => currentAvgMap[c.id+'|'+b.barcode]);
       const p = productFor(b.barcode, repChain && repChain.id);
-      const rowVals = chains.map(c => {
+      // אותה הגנה מפני התנגשות-ברקוד כמו בטבלה הראשית: מחיר של רשת שהשם
+      // שלה לא זהה-בפועל למוצר המיוצג (repChain) לא באמת בר-השוואה, ולא
+      // אמור להשפיע על מי "הכי זול" בסל.
+      const cellDiffers = chains.map(c => {
+        const cp = productFor(b.barcode, c.id);
+        return !!(cp.name && (!p.name || !likelySameProduct(cp.name, p.name)));
+      });
+      const rowVals = chains.map((c, i) => {
         const rec = currentAvgMap[c.id+'|'+b.barcode];
-        return rec ? rec.avg_price * b.qty : null;
+        return (rec && !cellDiffers[i]) ? rec.avg_price * b.qty : null;
       });
       const valid = rowVals.filter(v => v != null);
-      const min = Math.min(...valid), max = Math.max(...valid);
+      const hasComparison = valid.length >= 2;
+      const min = hasComparison ? Math.min(...valid) : null;
+      const max = hasComparison ? Math.max(...valid) : null;
       const cells = chains.map((c, i) => {
-        const v = rowVals[i];
-        if(v == null) return '<td><span class="no-data">לא נמכר</span></td>';
-        const t = max === min ? 0 : (v - min) / (max - min);
-        const bg = colorForRatio(t, 0.55);
+        const rec = currentAvgMap[c.id+'|'+b.barcode];
+        if(!rec) return '<td><span class="no-data">לא נמכר</span></td>';
+        const v = rec.avg_price * b.qty;
+        const isComparable = hasComparison && !cellDiffers[i];
+        const t = isComparable ? (max === min ? 0 : (v - min) / (max - min)) : null;
+        const bg = t == null ? 'transparent' : colorForRatio(t, 0.55);
         return `<td><span class="price-cell" style="background:${bg};color:var(--ink);">₪${v.toFixed(2)}</span></td>`;
       }).join('');
-      return `<tr><td><div class="prod-name">${p.name || ('מוצר ' + b.barcode)}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
+      return `<tr><td><div class="prod-name">${escapeHtml(p.name || ('מוצר ' + b.barcode))}</div><div class="prod-meta">כמות: ${b.qty}</div></td>${cells}</tr>`;
     }).join('');
 
     // שורת סה"כ
@@ -1111,13 +1172,16 @@ async function loadDashboardData(){
     const pool = complete.length ? complete : totals;
     const minSum = Math.min(...pool.map(t => t.sum));
     const maxSum = Math.max(...pool.map(t => t.sum));
+    // פחות משתי רשתות עם סל מלא אומר שאין בכלל מה להשוות - "הכי זול"/"הכי
+    // יקר" על רשת יחידה עם סל מלא הוא מטעה, בדיוק כמו בטבלה הראשית.
+    const hasTotalComparison = complete.length >= 2;
 
     document.getElementById('basketFoot').innerHTML = `<tr class="basket-total-row">
       <td>סה"כ לסל</td>
       ${totals.map(t => {
         let cls = '';
-        if(t.missing === 0 && t.sum === minSum) cls = 'best-total';
-        else if(t.missing === 0 && t.sum === maxSum) cls = 'worst-total';
+        if(hasTotalComparison && t.missing === 0 && t.sum === minSum) cls = 'best-total';
+        else if(hasTotalComparison && t.missing === 0 && t.sum === maxSum) cls = 'worst-total';
         return `<td class="${cls}">
           ₪${t.sum.toFixed(2)}
           ${t.missing ? `<span class="missing-note">${t.missing} מוצרים לא במלאי</span>` : ''}
@@ -1149,8 +1213,8 @@ async function loadDashboardData(){
       });
       marker.bindPopup(`
         <div class="store-popup">
-          <h3>${c.name_he} - ${s.city_name || ''}</h3>
-          <div class="sp-addr">${s.address}</div>
+          <h3>${c.name_he} - ${escapeHtml(s.city_name || '')}</h3>
+          <div class="sp-addr">${escapeHtml(s.address)}</div>
         </div>
       `);
       marker.addTo(layer);
@@ -1193,7 +1257,7 @@ async function loadDashboardData(){
     const chainStores = stores.filter(s => s.chain_id === c.id);
     if(chainStores.length === 0) return '';
     const items = chainStores.map(s =>
-      `<li>${s.city_name || 'עיר לא ידועה'} - ${s.address}</li>`
+      `<li>${escapeHtml(s.city_name || 'עיר לא ידועה')} - ${escapeHtml(s.address)}</li>`
     ).join('');
     return `<h3>${c.name_he} (${chainStores.length})</h3><ul>${items}</ul>`;
   }).join('');
