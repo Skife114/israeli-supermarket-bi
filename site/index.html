@@ -340,7 +340,7 @@
       לכן סופקה רשימת הסניפים בטקסט כחלופה מלאה למידע. גרף מגמת המחיר לאורך זמן עדיין לא כולל היסטוריה
       (הנתון ייבנה בהדרגה עם הריצות היומיות הבאות).</p>
     <p><b>נתקלתם בבעיית נגישות?</b> פרטי יצירת קשר ייעודיים לדיווח על בעיות נגישות יתווספו בהמשך.</p>
-    <p>עודכן לאחרונה: 19.9.2026.</p>
+    <p id="lastUpdatedNote">עודכן לאחרונה: <span id="lastUpdatedDate">טוען…</span></p>
   </details>
 </div>
 
@@ -370,24 +370,33 @@ async function loadDashboardData(){
   const monthlyHistoryPromise = fetch('data/monthly_history.json')
     .then(r => r.ok ? r.json() : [])
     .catch(() => []);
-  const [chains, stores, products, current_avg, monthly_history] = await Promise.all([
+  // meta.json (תאריך "עודכן לאחרונה") נטען בהגנה מאותה סיבה בדיוק - קובץ
+  // חדש שעדיין לא קיים בדיפלוי הראשון אחרי הפיצ'ר לא אמור להפיל את הטעינה.
+  const metaPromise = fetch('data/meta.json')
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
+  const [chains, stores, products, current_avg, monthly_history, meta] = await Promise.all([
     fetch('data/chains.json').then(r => r.json()),
     fetch('data/stores.json').then(r => r.json()),
     fetch('data/products.json').then(r => r.json()),
     fetch('data/current_avg.json').then(r => r.json()),
     monthlyHistoryPromise,
+    metaPromise,
   ]);
-  return { chains, stores, products, current_avg, monthly_history, recent_weekly: [] };
+  return { chains, stores, products, current_avg, monthly_history, meta, recent_weekly: [] };
 }
 </script>
 <script>
 (async function(){
  try {
   const DATA = await loadDashboardData();
-  const { chains, products, current_avg, monthly_history, recent_weekly } = DATA;
+  const { chains, products, current_avg, monthly_history, meta, recent_weekly } = DATA;
 
   document.getElementById('heroSubtitle').textContent =
     `השוואת מחירים בין ${chains.length} רשתות מזון בישראל, לפי קטגוריה, יצרן ומחיר ממוצע.`;
+
+  document.getElementById('lastUpdatedDate').textContent =
+    meta && meta.last_updated ? formatDate(meta.last_updated) : 'לא ידוע';
 
   // קישור למוצר באתר הרשת - רק לרשתות שבפועל תומכות בחיפוש לפי ברקוד עם
   // התאמה מדויקת (נבדק ידנית מול האתרים עצמם): שופרסל וטיב טעם. רמי לוי
@@ -447,6 +456,21 @@ async function loadDashboardData(){
   // ---- מבני עזר לחיפוש מהיר ----
   const currentAvgMap = {}; // key: chain_id|barcode -> {avg_price, n_on_sale, n_stores}
   current_avg.forEach(r => currentAvgMap[r.chain_id + '|' + r.barcode] = r);
+
+  // productCatalog (Object.values של productByBarcode) יוצא ממוין באופן
+  // מקרי לפי סדר מספרי עולה של ברקוד - מפתחות אובייקט JS שנראים כמו מספר
+  // שלם תמיד עוברים סדר מספרי-עולה אוטומטי ע"י המנוע, בלי קשר לסדר
+  // ההוספה בפועל (התנהגות ידועה של JS objects, לא ניתנת לביטול). התוצאה
+  // בפועל: עמוד 1 כמעט תמיד הציג מוצרים מרשת בודדת (מי שיש לו את הברקוד
+  // המספרי הכי נמוך) - ההפך הגמור ממה שכלי השוואת מחירים אמור להראות
+  // ראשון. ממיינים כאן לפי מספר הרשתות שיש להן בפועל מחיר לברקוד (יורד),
+  // כדי שהשוואות אמיתיות (זמינות בכמה רשתות) יופיעו קודם ולא סדר מקרי.
+  function chainCoverageCount(barcode){
+    let n = 0;
+    for(const c of chains) if(currentAvgMap[c.id + '|' + barcode]) n++;
+    return n;
+  }
+  productCatalog.sort((a, b) => chainCoverageCount(b.barcode) - chainCoverageCount(a.barcode));
 
   const monthlyMap = {}; // key: chain_id|barcode -> [{month, price}, ...] sorted
   monthly_history.forEach(r => {

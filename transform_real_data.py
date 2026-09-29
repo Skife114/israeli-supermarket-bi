@@ -76,6 +76,26 @@ def clean_str(val):
     return str(val)
 
 
+_PLACEHOLDER_TEXT_VALUES = {"''", ".", ",", ", ,", "-", "NO_BODY"}
+
+
+def clean_text_field(val):
+    """כמו clean_str, ועוד מנקה תקלה שחוזרת בנתוני המקור הגולמיים: שם
+    שמכיל תווי בריחה מילוליים (\\" \\n \\/) שדלפו מייצוא JSON->CSV לא תקין
+    של הרשת עצמה (למשל 'תנובה בע\\"מ' במקום 'תנובה בע"מ'), ולפעמים נחתך
+    באמצע כך שנשאר \\ בודד בסוף. גם ממפה ערכי placeholder חסרי משמעות
+    (כמו "''" או ".") למחרוזת ריקה, כמו manufacturer/name ריקים לגיטימיים."""
+    s = clean_str(val)
+    if not s:
+        return s
+    s = s.replace('\\"', '"').replace("\\/", "/").replace("\\n", " ")
+    s = re.sub(r"\\+", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    if s in _PLACEHOLDER_TEXT_VALUES:
+        return ""
+    return s
+
+
 def load_and_ffill(path, ffill_cols):
     df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[""])
     df[ffill_cols] = df[ffill_cols].ffill()
@@ -301,8 +321,8 @@ if all_products:
     # pandas' to_json כותב את זה כ-null תקין (לא NaN לא-תקין כמו json.dump הגולמי),
     # אבל null עדיין שובר קוד צד-לקוח שמניח מחרוזת (כמו .includes() בדשבורד) -
     # אז מנקים כאן, לפני כל כתיבה לקובץ, בדיוק כמו clean_str לשדות הסניפים.
-    products_combined["name"] = products_combined["name"].fillna("")
-    products_combined["manufacturer"] = products_combined["manufacturer"].fillna("")
+    products_combined["name"] = products_combined["name"].apply(clean_text_field)
+    products_combined["manufacturer"] = products_combined["manufacturer"].apply(clean_text_field)
 
     products_combined["category"] = products_combined["name"].apply(categorize_product)
     n_categorized = (products_combined["category"] != "אחר").sum()
@@ -679,6 +699,11 @@ with open(os.path.join(SITE_DATA_DIR, "chains.json"), "w", encoding="utf-8") as 
     json.dump(list(all_chains.values()), f, ensure_ascii=False)
 with open(os.path.join(SITE_DATA_DIR, "stores.json"), "w", encoding="utf-8") as f:
     json.dump(all_stores, f, ensure_ascii=False)
+# תאריך הריצה הנוכחית, לתצוגה ב"עודכן לאחרונה" בדשבורד - כדי שלא יישאר
+# מוקפא בתאריך הדפלוי הראשון של הפיצ'ר (קובץ סטטי נפרד, לא שדה בתוך
+# chains.json, כדי לא לשנות את הצורה שממנה הדשבורד כבר קורא chains).
+with open(os.path.join(SITE_DATA_DIR, "meta.json"), "w", encoding="utf-8") as f:
+    json.dump({"last_updated": date.today().isoformat()}, f, ensure_ascii=False)
 
 if all_products:
     products_combined.to_json(os.path.join(SITE_DATA_DIR, "products.json"), orient="records", force_ascii=False)
