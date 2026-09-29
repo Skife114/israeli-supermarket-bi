@@ -1,12 +1,12 @@
 {
   "shufersal_756": {
-    "lat": 31.9543491,
-    "lng": 34.8421401,
+    "lat": 31.9531944,
+    "lng": 34.8419977,
     "location_precision": "exact"
   },
   "shufersal_374": {
-    "lat": 32.1627862,
-    "lng": 34.8438978,
+    "lat": 32.1624007,
+    "lng": 34.8475096,
     "location_precision": "exact"
   },
   "shufersal_371": {
@@ -50,8 +50,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_308": {
-    "lat": 32.8129532,
-    "lng": 35.1132429,
+    "lat": 32.8135691,
+    "lng": 35.1151949,
     "location_precision": "exact"
   },
   "shufersal_302": {
@@ -65,13 +65,13 @@
     "location_precision": "exact"
   },
   "shufersal_278": {
-    "lat": 32.0742608,
-    "lng": 34.8699098,
+    "lat": 32.0745882,
+    "lng": 34.8691489,
     "location_precision": "exact"
   },
   "shufersal_272": {
-    "lat": 32.0668083,
-    "lng": 34.8084678,
+    "lat": 32.0709123,
+    "lng": 34.808558,
     "location_precision": "exact"
   },
   "shufersal_271": {
@@ -100,18 +100,18 @@
     "location_precision": "city_fallback"
   },
   "shufersal_230": {
-    "lat": 32.172876,
-    "lng": 34.9185361,
+    "lat": 32.1755487,
+    "lng": 34.9071512,
     "location_precision": "exact"
   },
   "shufersal_228": {
-    "lat": 32.5178701,
-    "lng": 34.9406159,
+    "lat": 32.5173407,
+    "lng": 34.9407407,
     "location_precision": "exact"
   },
   "shufersal_216": {
-    "lat": 32.1647397,
-    "lng": 34.9042128,
+    "lat": 32.1646616,
+    "lng": 34.9041958,
     "location_precision": "exact"
   },
   "shufersal_212": {
@@ -200,8 +200,8 @@
     "location_precision": "exact"
   },
   "shufersal_38": {
-    "lat": 32.7686603,
-    "lng": 35.0036201,
+    "lat": 32.7688497,
+    "lng": 35.0036188,
     "location_precision": "exact"
   },
   "shufersal_36": {
@@ -210,8 +210,8 @@
     "location_precision": "exact"
   },
   "shufersal_34": {
-    "lat": 32.1445961,
-    "lng": 34.8379308,
+    "lat": 32.1401203,
+    "lng": 34.8359477,
     "location_precision": "exact"
   },
   "shufersal_33": {
@@ -220,8 +220,8 @@
     "location_precision": "exact"
   },
   "shufersal_32": {
-    "lat": 32.0682762,
-    "lng": 34.8285249,
+    "lat": 32.0594129,
+    "lng": 34.8281376,
     "location_precision": "exact"
   },
   "shufersal_28": {
@@ -235,8 +235,8 @@
     "location_precision": "exact"
   },
   "shufersal_24": {
-    "lat": 31.7810281,
-    "lng": 34.6492122,
+    "lat": 31.7784053,
+    "lng": 34.6510673,
     "location_precision": "exact"
   },
   "shufersal_23": {
@@ -320,8 +320,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_207": {
-    "lat": 32.02605,
-    "lng": 34.8590176,
+    "lat": 32.0258815,
+    "lng": 34.856289,
     "location_precision": "exact"
   },
   "shufersal_78": {
@@ -375,8 +375,8 @@
     "location_precision": "exact"
   },
   "shufersal_734": {
-    "lat": 32.8010402,
-    "lng": 35.0022028,
+    "lat": 32.799033,
+    "lng": 35.0017813,
     "location_precision": "exact"
   },
   "shufersal_789": {
@@ -390,8 +390,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_790": {
-    "lat": 31.9333991,
-    "lng": 34.8502091,
+    "lat": 31.9286248,
+    "lng": 34.8486655,
     "location_precision": "exact"
   },
   "shufersal_396": {
@@ -430,8 +430,8 @@
     "location_precision": "exact"
   },
   "shufersal_320": {
-    "lat": 31.771159,
-    "lng": 34.6385526,
+    "lat": 31.7707401,
+    "lng": 34.6391356,
     "location_precision": "exact"
   },
   "shufersal_316": {
@@ -440,13 +440,13 @@
     "location_precision": "city_fallback"
   },
   "shufersal_312": {
-    "lat": 32.8245604,
-    "lng": 34.9829009,
+    "lat": 32.8241615,
+    "lng": 34.9828094,
     "location_precision": "exact"
   },
   "shufersal_290": {
-    "lat": 32.0830952,
-    "lng": 34.8605296,
+    "lat": 32.0918007,
+    "lng": 34.8619633,
     "location_precision": "exact"
   },
   "shufersal_282": {
@@ -485,8 +485,8 @@
     "location_precision": "exact"
   },
   "shufersal_248": {
-    "lat": 31.265369,
-    "lng": 34.7647195,
+    "lat": 31.2681848,
+    "lng": 34.7598774,
     "location_precision": "exact"
   },
   "shufersal_245": {
@@ -520,13 +520,13 @@
     "location_precision": "exact"
   },
   "shufersal_222": {
-    "lat": 31.281495,
-    "lng": 34.7992019,
+    "lat": 31.2784922,
+    "lng": 34.7990774,
     "location_precision": "exact"
   },
   "shufersal_215": {
-    "lat": 32.4931533,
-    "lng": 35.4961143,
+    "lat": 32.4959901,
+    "lng": 35.4962427,
     "location_precision": "exact"
   },
   "shufersal_209": {
@@ -575,8 +575,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_181": {
-    "lat": 31.6617701,
-    "lng": 34.583603,
+    "lat": 31.6672275,
+    "lng": 34.5844695,
     "location_precision": "exact"
   },
   "shufersal_180": {
@@ -595,8 +595,8 @@
     "location_precision": "exact"
   },
   "shufersal_173": {
-    "lat": 32.3219613,
-    "lng": 34.9385143,
+    "lat": 32.3220676,
+    "lng": 34.9374205,
     "location_precision": "exact"
   },
   "shufersal_163": {
@@ -605,13 +605,13 @@
     "location_precision": "city_fallback"
   },
   "shufersal_159": {
-    "lat": 32.8114339,
-    "lng": 34.9601945,
+    "lat": 32.8076833,
+    "lng": 34.9626579,
     "location_precision": "exact"
   },
   "shufersal_153": {
-    "lat": 31.3184543,
-    "lng": 34.6225196,
+    "lat": 31.3176828,
+    "lng": 34.6267558,
     "location_precision": "exact"
   },
   "shufersal_152": {
@@ -645,8 +645,8 @@
     "location_precision": "exact"
   },
   "shufersal_123": {
-    "lat": 32.0126081,
-    "lng": 34.7770913,
+    "lat": 32.0119838,
+    "lng": 34.7795064,
     "location_precision": "exact"
   },
   "shufersal_122": {
@@ -660,8 +660,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_114": {
-    "lat": 31.7322561,
-    "lng": 35.1866475,
+    "lat": 31.7319079,
+    "lng": 35.1878093,
     "location_precision": "exact"
   },
   "shufersal_113": {
@@ -670,8 +670,8 @@
     "location_precision": "exact"
   },
   "shufersal_110": {
-    "lat": 31.2279036,
-    "lng": 34.8221687,
+    "lat": 31.2274173,
+    "lng": 34.8219217,
     "location_precision": "exact"
   },
   "shufersal_105": {
@@ -700,8 +700,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_92": {
-    "lat": 31.7773735,
-    "lng": 34.6372506,
+    "lat": 31.7784448,
+    "lng": 34.634625,
     "location_precision": "exact"
   },
   "shufersal_89": {
@@ -710,8 +710,8 @@
     "location_precision": "exact"
   },
   "shufersal_87": {
-    "lat": 32.1941633,
-    "lng": 34.8807353,
+    "lat": 32.1966648,
+    "lng": 34.8801542,
     "location_precision": "exact"
   },
   "shufersal_83": {
@@ -720,8 +720,8 @@
     "location_precision": "exact"
   },
   "shufersal_77": {
-    "lat": 32.4587602,
-    "lng": 35.0566718,
+    "lat": 32.4709015,
+    "lng": 35.0395785,
     "location_precision": "exact"
   },
   "shufersal_76": {
@@ -740,8 +740,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_45": {
-    "lat": 31.7547991,
-    "lng": 35.2144867,
+    "lat": 31.749537,
+    "lng": 35.2132718,
     "location_precision": "exact"
   },
   "shufersal_18": {
@@ -790,8 +790,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_764": {
-    "lat": 31.8112129,
-    "lng": 34.6495767,
+    "lat": 31.8061849,
+    "lng": 34.661722,
     "location_precision": "exact"
   },
   "shufersal_763": {
@@ -805,13 +805,13 @@
     "location_precision": "city_fallback"
   },
   "shufersal_716": {
-    "lat": 31.2338637,
-    "lng": 34.7950482,
+    "lat": 31.2337907,
+    "lng": 34.7949748,
     "location_precision": "exact"
   },
   "shufersal_715": {
-    "lat": 31.6493983,
-    "lng": 34.5616026,
+    "lat": 31.6489591,
+    "lng": 34.5765861,
     "location_precision": "exact"
   },
   "shufersal_714": {
@@ -890,8 +890,8 @@
     "location_precision": "exact"
   },
   "shufersal_677": {
-    "lat": 32.1629305,
-    "lng": 34.8425356,
+    "lat": 32.15843,
+    "lng": 34.8423705,
     "location_precision": "exact"
   },
   "shufersal_676": {
@@ -980,8 +980,8 @@
     "location_precision": "exact"
   },
   "shufersal_654": {
-    "lat": 32.1093349,
-    "lng": 34.880753,
+    "lat": 32.1021812,
+    "lng": 34.8619163,
     "location_precision": "exact"
   },
   "shufersal_653": {
@@ -1000,8 +1000,8 @@
     "location_precision": "exact"
   },
   "shufersal_648": {
-    "lat": 32.1809853,
-    "lng": 34.8953621,
+    "lat": 32.1818958,
+    "lng": 34.8960817,
     "location_precision": "exact"
   },
   "shufersal_645": {
@@ -1150,8 +1150,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_201": {
-    "lat": 32.2768604,
-    "lng": 34.8394932,
+    "lat": 32.277403,
+    "lng": 34.8406482,
     "location_precision": "exact"
   },
   "shufersal_178": {
@@ -1160,13 +1160,13 @@
     "location_precision": "exact"
   },
   "shufersal_172": {
-    "lat": 31.9531912,
-    "lng": 34.8421704,
+    "lat": 31.9543491,
+    "lng": 34.8421401,
     "location_precision": "exact"
   },
   "shufersal_112": {
-    "lat": 32.8489911,
-    "lng": 35.0836005,
+    "lat": 32.848413,
+    "lng": 35.083296,
     "location_precision": "exact"
   },
   "shufersal_41": {
@@ -1195,8 +1195,8 @@
     "location_precision": "exact"
   },
   "shufersal_145": {
-    "lat": 31.4173779,
-    "lng": 34.5917801,
+    "lat": 31.4183409,
+    "lng": 34.5956218,
     "location_precision": "exact"
   },
   "shufersal_252": {
@@ -1205,8 +1205,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_233": {
-    "lat": 31.2309453,
-    "lng": 34.8184562,
+    "lat": 31.2300453,
+    "lng": 34.8224424,
     "location_precision": "exact"
   },
   "shufersal_482": {
@@ -1250,8 +1250,8 @@
     "location_precision": "exact"
   },
   "shufersal_608": {
-    "lat": 31.788597,
-    "lng": 35.1910246,
+    "lat": 31.7918627,
+    "lng": 35.1919364,
     "location_precision": "exact"
   },
   "shufersal_607": {
@@ -1295,8 +1295,8 @@
     "location_precision": "exact"
   },
   "shufersal_234": {
-    "lat": 31.731679,
-    "lng": 34.9936841,
+    "lat": 31.7356669,
+    "lng": 34.99228,
     "location_precision": "exact"
   },
   "shufersal_219": {
@@ -1320,8 +1320,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_73": {
-    "lat": 31.7996494,
-    "lng": 34.6613834,
+    "lat": 31.7996799,
+    "lng": 34.6638964,
     "location_precision": "exact"
   },
   "shufersal_62": {
@@ -1370,23 +1370,23 @@
     "location_precision": "city_fallback"
   },
   "shufersal_744": {
-    "lat": 31.6495811,
-    "lng": 34.5653162,
+    "lat": 31.64838,
+    "lng": 34.5626537,
     "location_precision": "exact"
   },
   "shufersal_743": {
-    "lat": 31.6066476,
-    "lng": 34.7547278,
+    "lat": 31.6073037,
+    "lng": 34.7573971,
     "location_precision": "exact"
   },
   "shufersal_741": {
-    "lat": 32.0641438,
-    "lng": 34.8612783,
+    "lat": 32.0642717,
+    "lng": 34.8616123,
     "location_precision": "exact"
   },
   "shufersal_599": {
-    "lat": 32.06487,
-    "lng": 34.8106767,
+    "lat": 32.0599179,
+    "lng": 34.8116962,
     "location_precision": "exact"
   },
   "shufersal_598": {
@@ -1400,8 +1400,8 @@
     "location_precision": "exact"
   },
   "shufersal_595": {
-    "lat": 32.3367665,
-    "lng": 35.0127449,
+    "lat": 32.3315231,
+    "lng": 35.0113908,
     "location_precision": "exact"
   },
   "shufersal_579": {
@@ -1440,8 +1440,8 @@
     "location_precision": "exact"
   },
   "shufersal_397": {
-    "lat": 32.6141517,
-    "lng": 35.3066982,
+    "lat": 32.614074,
+    "lng": 35.3067189,
     "location_precision": "exact"
   },
   "shufersal_394": {
@@ -1455,8 +1455,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_391": {
-    "lat": 32.05355,
-    "lng": 34.804585,
+    "lat": 32.053204,
+    "lng": 34.804423,
     "location_precision": "exact"
   },
   "shufersal_390": {
@@ -1500,8 +1500,8 @@
     "location_precision": "exact"
   },
   "shufersal_376": {
-    "lat": 32.1778505,
-    "lng": 34.8623054,
+    "lat": 32.181425,
+    "lng": 34.8634378,
     "location_precision": "exact"
   },
   "shufersal_375": {
@@ -1560,8 +1560,8 @@
     "location_precision": "exact"
   },
   "shufersal_335": {
-    "lat": 32.1733919,
-    "lng": 34.9038137,
+    "lat": 32.1721916,
+    "lng": 34.9090137,
     "location_precision": "exact"
   },
   "shufersal_334": {
@@ -1640,8 +1640,8 @@
     "location_precision": "exact"
   },
   "shufersal_186": {
-    "lat": 32.8148015,
-    "lng": 34.9768667,
+    "lat": 32.8131166,
+    "lng": 34.9787447,
     "location_precision": "exact"
   },
   "shufersal_179": {
@@ -1685,8 +1685,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_90": {
-    "lat": 31.263266,
-    "lng": 34.8105466,
+    "lat": 31.2633648,
+    "lng": 34.8111618,
     "location_precision": "exact"
   },
   "shufersal_82": {
@@ -1720,8 +1720,8 @@
     "location_precision": "exact"
   },
   "shufersal_299": {
-    "lat": 32.1599084,
-    "lng": 34.9050368,
+    "lat": 32.1604473,
+    "lng": 34.9034745,
     "location_precision": "exact"
   },
   "shufersal_29": {
@@ -1755,8 +1755,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_251": {
-    "lat": 32.6099448,
-    "lng": 35.2945674,
+    "lat": 32.6076797,
+    "lng": 35.2995976,
     "location_precision": "exact"
   },
   "shufersal_244": {
@@ -1770,8 +1770,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_218": {
-    "lat": 32.6180057,
-    "lng": 35.3054038,
+    "lat": 32.614624,
+    "lng": 35.2989722,
     "location_precision": "exact"
   },
   "shufersal_214": {
@@ -1800,8 +1800,8 @@
     "location_precision": "exact"
   },
   "shufersal_182": {
-    "lat": 31.0733527,
-    "lng": 35.0317394,
+    "lat": 31.0794986,
+    "lng": 35.0311563,
     "location_precision": "exact"
   },
   "shufersal_166": {
@@ -1820,18 +1820,18 @@
     "location_precision": "city_fallback"
   },
   "shufersal_128": {
-    "lat": 32.7834073,
-    "lng": 34.9611033,
+    "lat": 32.7835851,
+    "lng": 34.9609592,
     "location_precision": "exact"
   },
   "shufersal_124": {
-    "lat": 32.0077766,
-    "lng": 34.7455516,
+    "lat": 32.012373,
+    "lng": 34.7487483,
     "location_precision": "exact"
   },
   "shufersal_121": {
-    "lat": 33.0018976,
-    "lng": 35.0973758,
+    "lat": 33.005436,
+    "lng": 35.0981629,
     "location_precision": "exact"
   },
   "shufersal_106": {
@@ -1850,8 +1850,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_13": {
-    "lat": 31.7515611,
-    "lng": 34.9877604,
+    "lat": 31.7507398,
+    "lng": 34.9870233,
     "location_precision": "exact"
   },
   "shufersal_139": {
@@ -1870,8 +1870,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_007": {
-    "lat": 31.7925953,
-    "lng": 35.1441365,
+    "lat": 31.7984688,
+    "lng": 35.1460902,
     "location_precision": "exact"
   },
   "rami_levy_009": {
@@ -1915,8 +1915,8 @@
     "location_precision": "exact"
   },
   "rami_levy_019": {
-    "lat": 32.8181553,
-    "lng": 35.0554598,
+    "lat": 32.8146525,
+    "lng": 35.0615758,
     "location_precision": "exact"
   },
   "rami_levy_020": {
@@ -2010,13 +2010,13 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_044": {
-    "lat": 32.4540695,
-    "lng": 34.905824,
+    "lat": 32.4448515,
+    "lng": 34.8941767,
     "location_precision": "exact"
   },
   "rami_levy_045": {
-    "lat": 32.006242,
-    "lng": 34.7462241,
+    "lat": 32.0054915,
+    "lng": 34.7483154,
     "location_precision": "exact"
   },
   "rami_levy_046": {
@@ -2050,8 +2050,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_055": {
-    "lat": 32.1184654,
-    "lng": 34.8368654,
+    "lat": 32.114646,
+    "lng": 34.8405054,
     "location_precision": "exact"
   },
   "rami_levy_056": {
@@ -2070,8 +2070,8 @@
     "location_precision": "exact"
   },
   "rami_levy_059": {
-    "lat": 31.9367603,
-    "lng": 34.8663859,
+    "lat": 31.9222667,
+    "lng": 34.8814444,
     "location_precision": "exact"
   },
   "rami_levy_061": {
@@ -2085,8 +2085,8 @@
     "location_precision": "exact"
   },
   "rami_levy_063": {
-    "lat": 31.2385286,
-    "lng": 34.7954414,
+    "lat": 31.2396422,
+    "lng": 34.7993229,
     "location_precision": "exact"
   },
   "rami_levy_064": {
@@ -2120,8 +2120,8 @@
     "location_precision": "exact"
   },
   "rami_levy_700": {
-    "lat": 31.8342872,
-    "lng": 35.234614,
+    "lat": 31.8163072,
+    "lng": 35.2388359,
     "location_precision": "exact"
   },
   "rami_levy_704": {
@@ -2160,8 +2160,8 @@
     "location_precision": "exact"
   },
   "rami_levy_713": {
-    "lat": 32.0749867,
-    "lng": 34.8184649,
+    "lat": 32.0748889,
+    "lng": 34.8184643,
     "location_precision": "exact"
   },
   "rami_levy_714": {
@@ -2190,18 +2190,18 @@
     "location_precision": "exact"
   },
   "rami_levy_720": {
-    "lat": 32.3094019,
-    "lng": 34.8754813,
+    "lat": 32.3104634,
+    "lng": 34.872438,
     "location_precision": "exact"
   },
   "rami_levy_722": {
-    "lat": 32.6198835,
-    "lng": 35.2891596,
+    "lat": 32.6198336,
+    "lng": 35.289326,
     "location_precision": "exact"
   },
   "rami_levy_724": {
-    "lat": 32.1436214,
-    "lng": 34.8879095,
+    "lat": 32.0743006,
+    "lng": 34.8484587,
     "location_precision": "exact"
   },
   "rami_levy_727": {
@@ -2230,8 +2230,8 @@
     "location_precision": "exact"
   },
   "tiv_taam_002": {
-    "lat": 32.2746837,
-    "lng": 34.8618888,
+    "lat": 32.2760197,
+    "lng": 34.8623488,
     "location_precision": "exact"
   },
   "tiv_taam_003": {
@@ -2285,8 +2285,8 @@
     "location_precision": "exact"
   },
   "tiv_taam_023": {
-    "lat": 32.5114712,
-    "lng": 34.9050317,
+    "lat": 32.5141157,
+    "lng": 34.9047991,
     "location_precision": "exact"
   },
   "tiv_taam_024": {
@@ -2315,8 +2315,8 @@
     "location_precision": "city_fallback"
   },
   "tiv_taam_056": {
-    "lat": 32.1145575,
-    "lng": 34.8257793,
+    "lat": 32.1147382,
+    "lng": 34.825767,
     "location_precision": "exact"
   },
   "tiv_taam_068": {
@@ -2400,8 +2400,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_284": {
-    "lat": 32.2484968,
-    "lng": 34.9155023,
+    "lat": 32.2594055,
+    "lng": 34.9218669,
     "location_precision": "exact"
   },
   "shufersal_109": {
@@ -2435,8 +2435,8 @@
     "location_precision": "exact"
   },
   "shufersal_119": {
-    "lat": 31.9073982,
-    "lng": 35.0157619,
+    "lat": 31.9082409,
+    "lng": 35.0139995,
     "location_precision": "exact"
   },
   "shufersal_652": {
@@ -2455,8 +2455,8 @@
     "location_precision": "exact"
   },
   "shufersal_623": {
-    "lat": 32.0295698,
-    "lng": 34.8791227,
+    "lat": 32.030185,
+    "lng": 34.876495,
     "location_precision": "exact"
   },
   "shufersal_489": {
@@ -2480,8 +2480,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_315": {
-    "lat": 32.2808121,
-    "lng": 34.8754607,
+    "lat": 32.2723633,
+    "lng": 34.8725436,
     "location_precision": "exact"
   },
   "shufersal_283": {
@@ -2490,8 +2490,8 @@
     "location_precision": "city_fallback"
   },
   "shufersal_205": {
-    "lat": 32.0258408,
-    "lng": 34.898708,
+    "lat": 32.0258229,
+    "lng": 34.8988321,
     "location_precision": "exact"
   },
   "shufersal_134": {
@@ -2520,8 +2520,8 @@
     "location_precision": "exact"
   },
   "rami_levy_728": {
-    "lat": 32.0845939,
-    "lng": 34.9684927,
+    "lat": 32.0960562,
+    "lng": 34.9439578,
     "location_precision": "exact"
   },
   "tiv_taam_017": {
