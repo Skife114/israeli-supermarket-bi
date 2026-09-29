@@ -474,7 +474,7 @@ for friendly_id, fname in PROMO_FILES.items():
     print(f"\n{friendly_id} ({fname}):")
     print(f"  סה\"כ שורות מבצע: {len(promo_df)}")
 
-    n_kept = n_club = n_expired = n_bad = 0
+    n_kept = n_club = n_expired = n_not_yet = n_bad = 0
     for _, row in promo_df.iterrows():
         # קופון (additionaliscoupon) דורש פעולת מימוש נפרדת (קליפה/הצגת קוד) -
         # לא מחיר שרואים סתם בכניסה לחנות, אז לא מציגים אותו כ"מחיר מבצע" רגיל.
@@ -494,7 +494,17 @@ for friendly_id, fname in PROMO_FILES.items():
         if end_date is None or end_date < today_str:
             n_expired += 1
             continue
-        start_date = parse_promo_date(row.get("promotionstartdatetime")) or end_date
+        # תאריך התחלה עתידי (נצפה בדאטה אמיתי - רשתות מפרסמות מבצעים מראש)
+        # אומר שהמבצע עוד לא בתוקף היום, גם אם end_date תקין ועתידי - בלי
+        # הבדיקה הזו הסטטוס "פעיל" תלוי רק בתאריך הסיום, אז מבצע שמתחיל רק
+        # בעוד שבוע היה מוצג כזמין כבר עכשיו. תאריך התחלה חסר/לא-תקין לא
+        # נחסם - מניחים שאין הגבלת-התחלה (כמו שדות אופציונליים אחרים בסכימה
+        # הזו, למשל clubid="0" שמייצג "בלי הגבלה" ולא "תא ריק == לא תקף").
+        raw_start_date = parse_promo_date(row.get("promotionstartdatetime"))
+        if raw_start_date and raw_start_date > today_str:
+            n_not_yet += 1
+            continue
+        start_date = raw_start_date or end_date
 
         label_base = clean_str(row.get("promotiondescription")) or "מבצע"
 
@@ -532,8 +542,13 @@ for friendly_id, fname in PROMO_FILES.items():
                 "label": label, "qty": qty, "deal_total": round(deal_total, 2),
                 "start_date": start_date, "end_date": end_date,
             }
+            # אותו ברקוד יכול להופיע בכמה שורות מבצע (למשל דגימת כמה סניפים
+            # שונים, או שתי קמפיינים שונים שחלים יחד על אותו מוצר) - בין
+            # מועמדים שונים ממש (לא כפילות זהה) עדיף להציג ללקוח את ההצעה
+            # המשתלמת ביותר בפועל (מחיר-ליחידה אפקטיבי הכי נמוך), לא סתם את
+            # זאת שפגה הכי מוקדם - שני קריטריונים לא קשורים בכלל לאיכות ההצעה.
             existing = promo_by_key.get(key)
-            if existing is None or end_date < existing["end_date"]:
+            if existing is None or (deal_total / qty) < (existing["deal_total"] / existing["qty"]):
                 promo_by_key[key] = promo_record
             row_kept = True
 
@@ -542,7 +557,8 @@ for friendly_id, fname in PROMO_FILES.items():
         else:
             n_bad += 1
 
-    print(f"  נשמרו: {n_kept} | מועדון/קופון (סוננו): {n_club} | פג תוקף (סוננו): {n_expired} | לא תקין (סוננו): {n_bad}")
+    print(f"  נשמרו: {n_kept} | מועדון/קופון (סוננו): {n_club} | פג תוקף (סוננו): {n_expired} | "
+          f"טרם התחיל (סוננו): {n_not_yet} | לא תקין (סוננו): {n_bad}")
 
 print(f"\nסה\"כ מבצעים ייחודיים (אחרי דה-דופ' לפי רשת+ברקוד): {len(promo_by_key)}")
 
@@ -550,10 +566,17 @@ if has_price_data:
     if promo_by_key:
         def attach_promo(r):
             rec = promo_by_key.get((r["chain_id"], r["barcode"]))
+            if rec is None:
+                return None
             # תקינות סופית: מציגים "מבצע" רק אם המחיר בו נמוך ממש מהמחיר
             # הרגיל הממוצע שחישבנו - שומר מפני נתוני מבצע פגומים/לא-עדכניים
-            # שהיו הופכים ל"הנחה" מזויפת (מחיר זהה או גבוה יותר).
-            if rec is None or rec["deal_total"] >= r["avg_price"]:
+            # שהיו הופכים ל"הנחה" מזויפת (מחיר זהה או גבוה יותר). deal_total
+            # הוא המחיר לכל העסקה (qty יחידות, למשל "3 ב-18") ולא ליחידה
+            # בודדת - בלי הכפלה ב-qty כאן, כמעט כל מבצע "N ביחד" (qty>1)
+            # נפסל בטעות כי סכום-החבילה כמעט תמיד גבוה ממחיר יחידה בודדת,
+            # גם כשההנחה האמיתית על כל החבילה משמעותית (נמצא בבדיקה: 99.6%
+            # מהמבצעים שעברו את הבדיקה הישנה היו עם qty=1 בלבד).
+            if rec["deal_total"] >= r["avg_price"] * rec["qty"]:
                 return None
             return rec
 

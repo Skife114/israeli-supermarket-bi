@@ -465,12 +465,15 @@ async function loadDashboardData(){
   // המספרי הכי נמוך) - ההפך הגמור ממה שכלי השוואת מחירים אמור להראות
   // ראשון. ממיינים כאן לפי מספר הרשתות שיש להן בפועל מחיר לברקוד (יורד),
   // כדי שהשוואות אמיתיות (זמינות בכמה רשתות) יופיעו קודם ולא סדר מקרי.
-  function chainCoverageCount(barcode){
+  // מחושב פעם אחת מראש (לא בתוך ה-comparator של sort, שהיה מריץ אותו
+  // O(n log n) פעמים על כל הקטלוג - יקר בלי צורך כשאפשר O(n) פעם אחת).
+  const chainCoverageByBarcode = {};
+  productCatalog.forEach(p => {
     let n = 0;
-    for(const c of chains) if(currentAvgMap[c.id + '|' + barcode]) n++;
-    return n;
-  }
-  productCatalog.sort((a, b) => chainCoverageCount(b.barcode) - chainCoverageCount(a.barcode));
+    for(const c of chains) if(currentAvgMap[c.id + '|' + p.barcode]) n++;
+    chainCoverageByBarcode[p.barcode] = n;
+  });
+  productCatalog.sort((a, b) => chainCoverageByBarcode[b.barcode] - chainCoverageByBarcode[a.barcode]);
 
   const monthlyMap = {}; // key: chain_id|barcode -> [{month, price}, ...] sorted
   monthly_history.forEach(r => {
