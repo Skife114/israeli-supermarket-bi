@@ -1009,7 +1009,7 @@ async function loadDashboardData(){
       <div class="modal-row"><span class="lbl">כמות בעסקה</span><span>${promo.qty} יחידות</span></div>
       <div class="modal-row"><span class="lbl">מחיר רגיל ל-${promo.qty} יחידות</span><span>₪${regularTotal.toFixed(2)}</span></div>
       <div class="modal-row"><span class="lbl">מחיר במבצע</span><span>₪${promo.deal_total.toFixed(2)}</span></div>
-      <div class="modal-row"><span class="lbl">תחילת המבצע</span><span>${formatDate(promo.start_date)}</span></div>
+      ${promo.start_date ? `<div class="modal-row"><span class="lbl">תחילת המבצע</span><span>${formatDate(promo.start_date)}</span></div>` : ''}
       <div class="modal-row"><span class="lbl">סוף המבצע</span><span>${formatDate(promo.end_date)}</span></div>
       <div class="modal-save">${savingsPct == null ? '' : `חוסכים ₪${savings.toFixed(2)} (כ-${savingsPct}%) לעומת מחיר רגיל`}</div>
     `;

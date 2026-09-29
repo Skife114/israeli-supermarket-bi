@@ -509,7 +509,13 @@ for friendly_id, fname in PROMO_FILES.items():
         if raw_start_date and raw_start_date > today_str:
             n_not_yet += 1
             continue
-        start_date = raw_start_date or end_date
+        # כשהתאריך הגולמי חסר/לא-תקין (raw_start_date=None) לא נופלים חזרה
+        # ל-end_date בשביל הערך המוצג - נפילה כזו הייתה יוצרת שדה start_date
+        # מזויף (למשל שווה בדיוק ל-end_date, כאילו המבצע "מתחיל ומסתיים
+        # באותו יום" בעתיד) על מבצע שבעצם מוצג כפעיל כבר עכשיו. None כאן
+        # פירושו "אין תאריך התחלה ידוע" - הצד הלקוח כבר יודע לדלג על השורה
+        # הזו בחלונית כש-start_date חסר (בדיוק כמו שדות אופציונליים אחרים).
+        start_date = raw_start_date
 
         label_base = clean_str(row.get("promotiondescription")) or "מבצע"
 
