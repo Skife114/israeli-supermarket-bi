@@ -246,8 +246,10 @@
     </div>
     <fieldset class="field">
       <legend>תקופת השוואה</legend>
+      <!-- אין כפתור "שבוע": recent_weekly אף פעם לא מוזן ע"י הצינור (רק
+           monthly_history) - כפתור שקורא לנתון שלעולם לא קיים היה מציג
+           הודעת "יצטבר בריצה הבאה" מטעה שלעולם לא הופכת לנכונה. -->
       <div class="segmented" id="periodSegment">
-        <button type="button" data-period="week" aria-pressed="false">שבוע</button>
         <button type="button" data-period="month" aria-pressed="true">חודש</button>
         <button type="button" data-period="quarter" aria-pressed="false">רבעון</button>
         <button type="button" data-period="year" aria-pressed="false">שנה</button>
@@ -465,12 +467,15 @@ async function loadDashboardData(){
   // המספרי הכי נמוך) - ההפך הגמור ממה שכלי השוואת מחירים אמור להראות
   // ראשון. ממיינים כאן לפי מספר הרשתות שיש להן בפועל מחיר לברקוד (יורד),
   // כדי שהשוואות אמיתיות (זמינות בכמה רשתות) יופיעו קודם ולא סדר מקרי.
-  function chainCoverageCount(barcode){
+  // מחושב פעם אחת מראש (לא בתוך ה-comparator של sort, שהיה מריץ אותו
+  // O(n log n) פעמים על כל הקטלוג - יקר בלי צורך כשאפשר O(n) פעם אחת).
+  const chainCoverageByBarcode = {};
+  productCatalog.forEach(p => {
     let n = 0;
-    for(const c of chains) if(currentAvgMap[c.id + '|' + barcode]) n++;
-    return n;
-  }
-  productCatalog.sort((a, b) => chainCoverageCount(b.barcode) - chainCoverageCount(a.barcode));
+    for(const c of chains) if(currentAvgMap[c.id + '|' + p.barcode]) n++;
+    chainCoverageByBarcode[p.barcode] = n;
+  });
+  productCatalog.sort((a, b) => chainCoverageByBarcode[b.barcode] - chainCoverageByBarcode[a.barcode]);
 
   const monthlyMap = {}; // key: chain_id|barcode -> [{month, price}, ...] sorted
   monthly_history.forEach(r => {
