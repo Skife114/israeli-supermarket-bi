@@ -246,8 +246,10 @@
     </div>
     <fieldset class="field">
       <legend>תקופת השוואה</legend>
+      <!-- אין כפתור "שבוע": recent_weekly אף פעם לא מוזן ע"י הצינור (רק
+           monthly_history) - כפתור שקורא לנתון שלעולם לא קיים היה מציג
+           הודעת "יצטבר בריצה הבאה" מטעה שלעולם לא הופכת לנכונה. -->
       <div class="segmented" id="periodSegment">
-        <button type="button" data-period="week" aria-pressed="false">שבוע</button>
         <button type="button" data-period="month" aria-pressed="true">חודש</button>
         <button type="button" data-period="quarter" aria-pressed="false">רבעון</button>
         <button type="button" data-period="year" aria-pressed="false">שנה</button>
