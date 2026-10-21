@@ -1870,8 +1870,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_007": {
-    "lat": 31.7932699,
-    "lng": 35.144957,
+    "lat": 31.7988506,
+    "lng": 35.1465162,
     "location_precision": "exact"
   },
   "rami_levy_009": {
@@ -1895,13 +1895,13 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_013": {
-    "lat": 31.7860345,
-    "lng": 35.1873697,
+    "lat": 31.7859449,
+    "lng": 35.1880025,
     "location_precision": "exact"
   },
   "rami_levy_014": {
-    "lat": 32.7838046,
-    "lng": 35.498851,
+    "lat": 32.7800009,
+    "lng": 35.4993858,
     "location_precision": "exact"
   },
   "rami_levy_015": {
@@ -1915,8 +1915,8 @@
     "location_precision": "exact"
   },
   "rami_levy_019": {
-    "lat": 32.8146525,
-    "lng": 35.0615758,
+    "lat": 32.8181553,
+    "lng": 35.0554598,
     "location_precision": "exact"
   },
   "rami_levy_020": {
@@ -1970,8 +1970,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_034": {
-    "lat": 32.0822209,
-    "lng": 34.855616,
+    "lat": 32.0822063,
+    "lng": 34.8557154,
     "location_precision": "exact"
   },
   "rami_levy_036": {
@@ -1995,8 +1995,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_041": {
-    "lat": 31.89555,
-    "lng": 34.7902554,
+    "lat": 31.8955627,
+    "lng": 34.7905399,
     "location_precision": "exact"
   },
   "rami_levy_042": {
@@ -2010,13 +2010,13 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_044": {
-    "lat": 32.4550821,
-    "lng": 34.9061599,
+    "lat": 32.4437358,
+    "lng": 34.894271,
     "location_precision": "exact"
   },
   "rami_levy_045": {
-    "lat": 32.006242,
-    "lng": 34.7462241,
+    "lat": 32.0055636,
+    "lng": 34.7479026,
     "location_precision": "exact"
   },
   "rami_levy_046": {
@@ -2050,8 +2050,8 @@
     "location_precision": "city_fallback"
   },
   "rami_levy_055": {
-    "lat": 32.113789,
-    "lng": 34.8419449,
+    "lat": 32.1188797,
+    "lng": 34.8338002,
     "location_precision": "exact"
   },
   "rami_levy_056": {
@@ -2070,8 +2070,8 @@
     "location_precision": "exact"
   },
   "rami_levy_059": {
-    "lat": 31.9367603,
-    "lng": 34.8663859,
+    "lat": 31.9208867,
+    "lng": 34.883015,
     "location_precision": "exact"
   },
   "rami_levy_061": {
@@ -2085,8 +2085,8 @@
     "location_precision": "exact"
   },
   "rami_levy_063": {
-    "lat": 31.2388782,
-    "lng": 34.796493,
+    "lat": 31.2385286,
+    "lng": 34.7954414,
     "location_precision": "exact"
   },
   "rami_levy_064": {
@@ -2120,8 +2120,8 @@
     "location_precision": "exact"
   },
   "rami_levy_700": {
-    "lat": 31.8377654,
-    "lng": 35.234389,
+    "lat": 31.8342872,
+    "lng": 35.234614,
     "location_precision": "exact"
   },
   "rami_levy_704": {
@@ -2155,8 +2155,8 @@
     "location_precision": "exact"
   },
   "rami_levy_712": {
-    "lat": 32.0760339,
-    "lng": 34.8537087,
+    "lat": 32.0779523,
+    "lng": 34.8539087,
     "location_precision": "exact"
   },
   "rami_levy_713": {
@@ -2195,13 +2195,13 @@
     "location_precision": "exact"
   },
   "rami_levy_722": {
-    "lat": 32.6198835,
-    "lng": 35.2891596,
+    "lat": 32.6122058,
+    "lng": 35.2879972,
     "location_precision": "exact"
   },
   "rami_levy_724": {
-    "lat": 32.1432768,
-    "lng": 34.8802944,
+    "lat": 32.1415701,
+    "lng": 34.8767475,
     "location_precision": "exact"
   },
   "rami_levy_727": {
@@ -2230,8 +2230,8 @@
     "location_precision": "exact"
   },
   "tiv_taam_002": {
-    "lat": 32.2746837,
-    "lng": 34.8618888,
+    "lat": 32.2760197,
+    "lng": 34.8623488,
     "location_precision": "exact"
   },
   "tiv_taam_003": {
@@ -2245,8 +2245,8 @@
     "location_precision": "exact"
   },
   "tiv_taam_007": {
-    "lat": 31.6550635,
-    "lng": 34.5846418,
+    "lat": 31.6579792,
+    "lng": 34.5876321,
     "location_precision": "exact"
   },
   "tiv_taam_010": {
@@ -2350,8 +2350,8 @@
     "location_precision": "exact"
   },
   "tiv_taam_085": {
-    "lat": 32.067491,
-    "lng": 34.8663089,
+    "lat": 32.0688753,
+    "lng": 34.864949,
     "location_precision": "exact"
   },
   "tiv_taam_087": {
@@ -2520,8 +2520,8 @@
     "location_precision": "exact"
   },
   "rami_levy_728": {
-    "lat": 32.0821141,
-    "lng": 34.9761874,
+    "lat": 32.0961194,
+    "lng": 34.944038,
     "location_precision": "exact"
   },
   "tiv_taam_017": {
